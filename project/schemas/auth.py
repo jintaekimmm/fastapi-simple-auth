@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, validator, EmailStr
 
 
@@ -9,6 +11,7 @@ class SignUpBaseSchema(BaseModel):
     mobile: str
     mobile_key: str
     password: str
+    is_active: Optional[int] = 0
 
 
 class SignupRequestSchema(BaseModel):
