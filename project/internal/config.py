@@ -26,8 +26,11 @@ class Settings(BaseSettings):
     ############
     password_secret_key: str
     blind_index_key: str
-    jwt_secret_key: str
     jwt_algorithm: str = 'HS256'
+    jwt_access_secret_key: str
+    jwt_refresh_secret_key: str
+    jwt_access_token_expire_minutes: int = 15
+    jwt_refresh_token_expire_minutes: int = 20160
     aes_encrypt_key: str
 
 
