@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -21,7 +22,22 @@ class CreateTokenSchema(BaseModel):
 
 class InsertTokenSchema(BaseModel):
     user_id: int
+    access_token: str
     refresh_token: str
     refresh_token_key: str
     issued_at: datetime
     expires_at: datetime
+
+
+class CookieTokenSchema(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
+class TokenUser(BaseModel):
+    iat: str
+    exp: str
+    sub: str
+    type: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None

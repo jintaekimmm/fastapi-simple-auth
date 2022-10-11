@@ -1,18 +1,19 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.crud.crud_token import RefreshTokenDAL, RefreshTokenDAL
+from db.crud.crud_token import RefreshTokenDAL
 from db.crud.crud_user import UserDAL
 from app.core.auth import authenticate, create_new_jwt_token
+from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.auth import LoginRequestSchema
 from schemas.signup import SignupRequestSchema, SignUpBaseSchema
 from app.core.security.encryption import AESCipher, Hasher
-from schemas.token import CreateTokenSchema, InsertTokenSchema
+from schemas.token import CreateTokenSchema, InsertTokenSchema, CookieTokenSchema, TokenUser
 
 router = APIRouter(prefix='/v1', tags=['auth'])
 
@@ -108,6 +109,7 @@ async def api_login(*,
     token = await create_new_jwt_token(sub=str(user.id))
     # refreshToken insert schema 생성
     insert_refresh_token = InsertTokenSchema(user_id=user.id,
+                                             access_token=token.access_token,
                                              refresh_token=aes.encrypt(token.refresh_token),
                                              refresh_token_key=Hasher.hmac_sha256(token.refresh_token),
                                              issued_at=datetime.fromtimestamp(int(token.iat)),
@@ -165,6 +167,7 @@ async def web_login(*,
     token = await create_new_jwt_token(sub=str(user.id))
     # refreshToken insert schema 생성
     insert_refresh_token = InsertTokenSchema(user_id=user.id,
+                                             access_token=token.access_token,
                                              refresh_token=aes.encrypt(token.refresh_token),
                                              refresh_token_key=Hasher.hmac_sha256(token.refresh_token),
                                              issued_at=datetime.fromtimestamp(int(token.iat)),
@@ -190,34 +193,103 @@ async def web_login(*,
 
 
 @router.post('/api/logout')
-async def logout():
+async def api_logout(*,
+                     token: TokenUser = Depends(AuthorizeTokenUser()),
+                     session: AsyncSession = Depends(get_session)):
     """
-    User Logout PAI
+    User Logout API(API Version)
 
     Logout Process
         1. RefreshToken을 `token` 테이블에서 삭제한다
     """
 
-    pass
+    token_dal = RefreshTokenDAL(session=session)
+
+    try:
+        # refreshToken이 존재하는지 확인한 후 삭제한다
+        if await token_dal.exists_by_id_and_token(user_id=int(token.sub),
+                                                  access_token=token.access_token):
+            await token_dal.delete_by_id_and_token(user_id=int(token.sub),
+                                                   access_token=token.access_token)
+
+            await session.commit()
+        else:
+            raise Exception('user refresh token not found')
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        return JSONResponse({'message': 'Invalid Refresh Token'},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    finally:
+        await session.close()
+
+    return JSONResponse({'message': 'logout success'})
 
 
 @router.post('/web/logout')
-async def logout():
+async def web_logout(*,
+                     token: TokenUser = Depends(AuthorizeCookieUser()),
+                     session: AsyncSession = Depends(get_session)):
     """
-    User Logout PAI
+    User Logout API(Web Version)
 
     Logout Process
-        1. cookie에서 토큰을 삭제한다
+        1. accessToken 유효성 확인
         2. RefreshToken을 `token` 테이블에서 삭제한다
+        3. cookie에서 토큰을 삭제한다
+    """
+    token_dal = RefreshTokenDAL(session=session)
+
+    try:
+        # refreshToken이 존재하는지 확인한 후 삭제한다
+        if await token_dal.exists_by_id_and_token(user_id=int(token.sub),
+                                                  access_token=token.access_token):
+            await token_dal.delete_by_id_and_token(user_id=int(token.sub),
+                                                   access_token=token.access_token)
+
+            await session.commit()
+        else:
+            raise Exception('user refresh token not found')
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        return JSONResponse({'message': 'Invalid Refresh Token'},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        # Cookie에 accessToken과 refreshToken을 삭제한다
+        response = JSONResponse({'message': 'logout success'})
+        response.set_cookie(key='access_token', value='', httponly=True, max_age=0)
+        response.set_cookie(key='refresh_token', value='', httponly=True, max_age=0)
+
+        return response
+    finally:
+        await session.close()
+
+
+@router.post('/api/token/refresh')
+async def api_token_refresh(*,
+                            token: TokenUser = Depends(AuthorizeTokenUser()),
+                            session: AsyncSession = Depends(get_session)):
+    """
+    JWT Token Refresh API(API Version)
+
+    Refresh Process
+        1. DB에서 refreshToken을 가져온다
+        2. DB에 저장된 refreshToken과 요청한 refreshToken을 비교
+         - 다르다면 refresh process 종료
+        3. accessToken 발급
+         - refreshToken은 재발급하지 않는다
     """
 
     pass
 
 
-@router.post('/token/refresh')
-async def token_refresh():
+@router.post('/web/token/refresh')
+async def web_token_refresh(*,
+                            token: TokenUser = Depends(AuthorizeCookieUser()),
+                            session: AsyncSession = Depends(get_session)):
     """
-    JWT Token Refresh API
+    JWT Token Refresh API(Web Version)
 
     Refresh Process
         1. DB에서 refreshToken을 가져온다

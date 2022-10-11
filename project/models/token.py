@@ -8,6 +8,7 @@ class Token(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
+    access_token = Column(String(255), index=True)
     refresh_token = Column(Text)
     refresh_token_key = Column(String(128), index=True)
     issued_at = Column(DateTime)

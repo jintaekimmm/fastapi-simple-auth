@@ -10,13 +10,16 @@ class RefreshTokenDAL:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def exists_by_user_id(self, user_id: int) -> bool:
+    async def exists_by_id_and_token(self,
+                                     user_id: int,
+                                     access_token: str) -> bool:
         """
         사용자 refreshToken이 존재하는지 조회한다
         """
         exists_criteria = (
             select(Token.user_id).
             where(Token.user_id == user_id).
+            where(Token.access_token == access_token).
             exists()
         )
         q = select(Token.user_id).where(exists_criteria)
@@ -24,12 +27,15 @@ class RefreshTokenDAL:
 
         return bool(result.all())
 
-    async def delete_by_user_id(self, user_id: int) -> None:
+    async def delete_by_id_and_token(self,
+                                     user_id: int,
+                                     access_token: str) -> None:
         """
         사용자의 refreshToken을 삭제한다
         """
         q = delete(Token) \
             .where(Token.user_id == user_id) \
+            .where(Token.access_token == access_token) \
             .execution_options(synchronize_session="fetch")
 
         await self.session.execute(q)
