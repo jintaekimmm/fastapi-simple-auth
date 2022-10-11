@@ -1,3 +1,4 @@
+import secrets
 from datetime import timedelta, datetime
 
 from jose import jwt
@@ -36,7 +37,7 @@ async def create_new_jwt_token(*, sub: str) -> CreateTokenSchema:
     iat = str(int(datetime.now().timestamp()))
 
     access_token = await create_access_token(sub=sub, iat=iat)
-    refresh_token = await create_refresh_token(sub=sub, iat=iat)
+    refresh_token = await create_refresh_token()
 
     return CreateTokenSchema(
         token_type='Bearer',
@@ -60,14 +61,16 @@ async def create_access_token(*, sub: str, iat: str) -> CreateTokenPartSchema:
                          iat=iat)
 
 
-async def create_refresh_token(*, sub: str, iat: str) -> CreateTokenPartSchema:
+async def create_refresh_token() -> CreateTokenPartSchema:
     """
     RefreshToken을 생성한다
     """
-    return _create_token(token_type='refresh_token',
-                         expires_in=timedelta(minutes=settings.jwt_refresh_token_expire_minutes),
-                         sub=sub,
-                         iat=iat)
+
+    random_token = secrets.token_hex(32)
+    t = timedelta(minutes=settings.jwt_refresh_token_expire_minutes)
+    exp = str(int((datetime.now() + t).timestamp()))
+
+    return CreateTokenPartSchema(token=random_token, expires_in=exp)
 
 
 def _create_token(token_type: str,
