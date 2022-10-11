@@ -33,12 +33,12 @@ class AuthorizeCookieUser:
                                  key=settings.jwt_access_secret_key,
                                  algorithms=[settings.jwt_algorithm])
             try:
-                token_data = TokenUser(**payload, access_token=access_token)
+                token_data = TokenUser(**payload, access_token=access_token, refresh_token=refresh_token)
                 return token_data
             except ValidationError as e:
                 app_logger.error(f'token validation error: {e}')
                 raise credentials_exception
-        except jwt.ExpiredSignatureError as e:
+        except jwt.ExpiredSignatureError:
             raise token_expired_exception
 
         except jwt.JWTError as e:
@@ -47,7 +47,7 @@ class AuthorizeCookieUser:
 
 
 class AuthorizeTokenUser:
-    def __call__(self, authorization: str = Header(None)):
+    def __call__(self, authorization: str = Header(None)) -> TokenUser:
         scheme, token = get_authorization_scheme_param(authorization)
 
         if scheme.lower() != "bearer" or not token:
@@ -64,7 +64,7 @@ class AuthorizeTokenUser:
                 app_logger.error(f'token validation error: {e}')
                 raise credentials_exception
 
-        except jwt.ExpiredSignatureError as e:
+        except jwt.ExpiredSignatureError:
             raise token_expired_exception
 
         except jwt.JWTError as e:

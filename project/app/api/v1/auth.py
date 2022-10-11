@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.crud.crud_token import RefreshTokenDAL
 from db.crud.crud_user import UserDAL
-from app.core.auth import authenticate, create_new_jwt_token
-from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser
+from app.core.auth import authenticate, create_new_jwt_token, create_access_token, new_refresh_token_expires
+from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.auth import LoginRequestSchema
@@ -207,14 +207,18 @@ async def api_logout(*,
 
     try:
         # refreshToken이 존재하는지 확인한 후 삭제한다
-        if await token_dal.exists_by_id_and_token(user_id=int(token.sub),
-                                                  access_token=token.access_token):
-            await token_dal.delete_by_id_and_token(user_id=int(token.sub),
-                                                   access_token=token.access_token)
+        if await token_dal.exists(user_id=int(token.sub),
+                                  access_token=token.access_token):
+            await token_dal.delete(user_id=int(token.sub),
+                                   access_token=token.access_token)
 
             await session.commit()
         else:
-            raise Exception('user refresh token not found')
+            raise Exception('user token not found')
+    except ValueError as e:
+        await session.rollback()
+        return JSONResponse({'message': str(e)},
+                            status_code=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         app_logger.error(e)
         await session.rollback()
@@ -242,18 +246,23 @@ async def web_logout(*,
 
     try:
         # refreshToken이 존재하는지 확인한 후 삭제한다
-        if await token_dal.exists_by_id_and_token(user_id=int(token.sub),
-                                                  access_token=token.access_token):
-            await token_dal.delete_by_id_and_token(user_id=int(token.sub),
-                                                   access_token=token.access_token)
+        if await token_dal.exists(user_id=int(token.sub),
+                                  access_token=token.access_token):
+            await token_dal.delete(user_id=int(token.sub),
+                                   access_token=token.access_token)
 
             await session.commit()
         else:
-            raise Exception('user refresh token not found')
+            raise ValueError('user token not found')
+    except ValueError as e:
+        await session.rollback()
+        return JSONResponse({'message': str(e)},
+                            status_code=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
         app_logger.error(e)
         await session.rollback()
-        return JSONResponse({'message': 'Invalid Refresh Token'},
+        return JSONResponse({'message': 'Token Expired fail'},
                             status_code=status.HTTP_404_NOT_FOUND)
     else:
         # Cookie에 accessToken과 refreshToken을 삭제한다
@@ -278,7 +287,7 @@ async def api_token_refresh(*,
         2. DB에 저장된 refreshToken과 요청한 refreshToken을 비교
          - 다르다면 refresh process 종료
         3. accessToken 발급
-         - refreshToken은 재발급하지 않는다
+         - refreshToken의 만료시간을 현재 시간 기준으로 업데이트한다
     """
 
     pass
@@ -296,7 +305,40 @@ async def web_token_refresh(*,
         2. DB에 저장된 refreshToken과 요청한 refreshToken을 비교
          - 다르다면 refresh process 종료
         3. accessToken 발급
-         - refreshToken은 재발급하지 않는다
+         - refreshToken의 만료시간을 현재 시간 기준으로 업데이트한다
     """
 
-    pass
+    # AES Encryption Instance
+    aes = AESCipher()
+
+    # Database Instance
+    token_dal = RefreshTokenDAL(session=session)
+
+    token_info = await token_dal.get(user_id=int(token.sub), access_token=token.access_token)
+    if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
+        raise credentials_exception
+
+    new_token = await create_access_token(sub=token.sub)
+    new_access_token = new_token.token
+
+    try:
+        await token_dal.update(user_id=int(token.sub),
+                               old_access_token=token.access_token,
+                               new_access_token=new_access_token,
+                               expires_at=new_refresh_token_expires())
+
+        await session.commit()
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        return JSONResponse({'message': 'Token Update failed'},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        # Cookie에 accessToken을 업데이트한다
+        response = JSONResponse({'message': 'refresh success'})
+        response.set_cookie(key='access_token', value=f'{new_access_token}', httponly=True)
+
+        return response
+    finally:
+        await session.close()
+
