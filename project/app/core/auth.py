@@ -29,11 +29,6 @@ def get_jwt_key(token_type: str) -> str:
         return settings.jwt_refresh_secret_key
 
 
-def new_refresh_token_expires() -> datetime:
-    t = timedelta(minutes=settings.jwt_refresh_token_expire_minutes)
-    return datetime.now() + t
-
-
 async def create_new_jwt_token(*, sub: str) -> CreateTokenSchema:
     """
     사용자에게 반환할 JWT 토큰을 생성한다

@@ -3,7 +3,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import User
-from schemas.signup import SignUpBaseSchema
+from schemas.user import SignUpBaseSchema
 
 
 class UserDAL:
