@@ -7,13 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.crud.crud_token import RefreshTokenDAL
 from db.crud.crud_user import UserDAL
 from app.core.auth import authenticate, create_new_jwt_token, create_access_token, new_refresh_token_expires
-from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception
+from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception, AuthorizeTokenRefresh
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.auth import LoginRequestSchema
 from schemas.signup import SignupRequestSchema, SignUpBaseSchema
 from app.core.security.encryption import AESCipher, Hasher
-from schemas.token import CreateTokenSchema, InsertTokenSchema, CookieTokenSchema, TokenUser, UpdateTokenSchema
+from schemas.token import CreateTokenSchema, InsertTokenSchema, CookieTokenSchema, TokenUser, UpdateTokenSchema, \
+    TokenSchema
 
 router = APIRouter(prefix='/v1', tags=['auth'])
 
@@ -275,9 +276,9 @@ async def web_logout(*,
         await session.close()
 
 
-@router.post('/api/token/refresh')
+@router.post('/api/token/refresh', response_model=TokenSchema)
 async def api_token_refresh(*,
-                            token: TokenUser = Depends(AuthorizeTokenUser()),
+                            token: TokenUser = Depends(AuthorizeTokenRefresh()),
                             session: AsyncSession = Depends(get_session)):
     """
     JWT Token Refresh API(API Version)
@@ -285,12 +286,45 @@ async def api_token_refresh(*,
     Refresh Process
         1. DB에서 refreshToken을 가져온다
         2. DB에 저장된 refreshToken과 요청한 refreshToken을 비교
-         - 다르다면 refresh process 종료
-        3. accessToken 발급
-         - refreshToken의 만료시간을 현재 시간 기준으로 업데이트한다
+        3. accessToken / refreshToken 신규 발급
+        4. DB에 refreshToken 정보 업데이트
     """
 
-    pass
+    # AES Encryption Instance
+    aes = AESCipher()
+
+    # Database Instance
+    token_dal = RefreshTokenDAL(session=session)
+
+    token_info = await token_dal.get(user_id=int(token.sub), access_token=token.access_token)
+
+    if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
+        raise credentials_exception
+
+    # 신규 JWT Token 발급
+    new_token = await create_new_jwt_token(sub=token.sub)
+    # refreshToken update schema 생성
+    update_token = UpdateTokenSchema(user_id=int(token.sub),
+                                     old_access_token=token.access_token,
+                                     new_access_token=new_token.access_token,
+                                     refresh_token_key=Hasher.hmac_sha256(new_token.refresh_token),
+                                     refresh_token=aes.encrypt(new_token.refresh_token),
+                                     expires_at=datetime.fromtimestamp(int(new_token.refresh_token_expires_in)))
+
+    try:
+        await token_dal.update(update_token)
+
+        await session.commit()
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        return JSONResponse({'message': 'Token Update failed'},
+                            status_code=status.HTTP_404_NOT_FOUND)
+    finally:
+        await session.close()
+
+    return TokenSchema(access_token=new_token.access_token,
+                       refresh_token=new_token.refresh_token)
 
 
 @router.post('/web/token/refresh')
@@ -317,7 +351,9 @@ async def web_token_refresh(*,
     if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
         raise credentials_exception
 
+    # 신규 JWT Token 발급
     new_token = await create_new_jwt_token(sub=token.sub)
+    # refreshToken update schema 생성
     update_token = UpdateTokenSchema(user_id=int(token.sub),
                                      old_access_token=token.access_token,
                                      new_access_token=new_token.access_token,

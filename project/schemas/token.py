@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class CreateTokenPartSchema(BaseModel):
@@ -9,7 +9,12 @@ class CreateTokenPartSchema(BaseModel):
     expires_in: str
 
 
-class CreateTokenSchema(BaseModel):
+class TokenSchema(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
+class CreateTokenSchema(TokenSchema):
     token_type: str = 'Bearer'
     access_token: str
     expires_in: str
@@ -38,9 +43,20 @@ class UpdateTokenSchema(BaseModel):
     expires_at: datetime
 
 
+class TokenRefreshRequestSchema(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
 class CookieTokenSchema(BaseModel):
     access_token: str
     refresh_token: str
+
+    @validator('access_token', 'refresh_token')
+    def require_validator(cls, v):
+        if not v:
+            raise ValueError('value required')
+        return v
 
 
 class TokenUser(BaseModel):

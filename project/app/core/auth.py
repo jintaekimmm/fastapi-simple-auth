@@ -43,7 +43,7 @@ async def create_new_jwt_token(*, sub: str) -> CreateTokenSchema:
 
     access_token = await create_access_token(sub=sub, iat=iat)
     refresh_token = await create_refresh_token()
-    print('make: ', refresh_token.token)
+
     return CreateTokenSchema(
         token_type='Bearer',
         access_token=access_token.token,

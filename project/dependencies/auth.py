@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from internal.config import settings
 from internal.logging import app_logger
-from schemas.token import TokenUser
+from schemas.token import TokenUser, CookieTokenSchema
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,6 +64,29 @@ class AuthorizeTokenUser:
                 app_logger.error(f'token validation error: {e}')
                 raise credentials_exception
 
+        except jwt.ExpiredSignatureError:
+            raise token_expired_exception
+
+        except jwt.JWTError as e:
+            app_logger.error(f'token jwt error: {e}')
+            raise credentials_exception
+
+
+class AuthorizeTokenRefresh:
+    def __call__(self, token: CookieTokenSchema) -> TokenUser:
+        if not token.access_token or not token.refresh_token:
+            raise credentials_exception
+
+        try:
+            payload = jwt.decode(token=token.access_token,
+                                 key=settings.jwt_access_secret_key,
+                                 algorithms=[settings.jwt_algorithm])
+            try:
+                token_data = TokenUser(**payload, access_token=token.access_token, refresh_token=token.refresh_token)
+                return token_data
+            except ValidationError as e:
+                app_logger.error(f'token validation error: {e}')
+                raise credentials_exception
         except jwt.ExpiredSignatureError:
             raise token_expired_exception
 
