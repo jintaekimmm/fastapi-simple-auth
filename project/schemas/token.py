@@ -29,6 +29,15 @@ class InsertTokenSchema(BaseModel):
     expires_at: datetime
 
 
+class UpdateTokenSchema(BaseModel):
+    user_id: int
+    old_access_token: str
+    new_access_token: str
+    refresh_token: str
+    refresh_token_key: str
+    expires_at: datetime
+
+
 class CookieTokenSchema(BaseModel):
     access_token: str
     refresh_token: str

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from models.token import Token
-from schemas.token import InsertTokenSchema
+from schemas.token import InsertTokenSchema, UpdateTokenSchema
 
 
 class RefreshTokenDAL:
@@ -61,20 +61,20 @@ class RefreshTokenDAL:
         await self.session.execute(q)
 
     async def update(self,
-                     user_id: int,
-                     old_access_token: str,
-                     new_access_token: str,
-                     expires_at: datetime):
+                     update_token: UpdateTokenSchema):
         """
         사용자의 token 정보를 업데이트한다
          - refreshToken 'expires_at'을 현재시간 기준으로 업데이트
          - accessToken 값을 신규로 token 값으로 업데이트
         """
+
         q = update(Token) \
-            .where(Token.user_id == user_id,
-                   Token.access_token == old_access_token) \
-            .values(access_token=new_access_token,
-                    expires_at=expires_at) \
+            .where(Token.user_id == update_token.user_id,
+                   Token.access_token == update_token.old_access_token) \
+            .values(access_token=update_token.new_access_token,
+                    refresh_token=update_token.refresh_token,
+                    refresh_token_key=update_token.refresh_token_key,
+                    expires_at=update_token.expires_at) \
             .execution_options(synchronize_session="fetch")
 
         await self.session.execute(q)

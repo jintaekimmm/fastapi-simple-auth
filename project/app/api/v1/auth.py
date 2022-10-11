@@ -13,7 +13,7 @@ from internal.logging import app_logger
 from schemas.auth import LoginRequestSchema
 from schemas.signup import SignupRequestSchema, SignUpBaseSchema
 from app.core.security.encryption import AESCipher, Hasher
-from schemas.token import CreateTokenSchema, InsertTokenSchema, CookieTokenSchema, TokenUser
+from schemas.token import CreateTokenSchema, InsertTokenSchema, CookieTokenSchema, TokenUser, UpdateTokenSchema
 
 router = APIRouter(prefix='/v1', tags=['auth'])
 
@@ -303,9 +303,8 @@ async def web_token_refresh(*,
     Refresh Process
         1. DB에서 refreshToken을 가져온다
         2. DB에 저장된 refreshToken과 요청한 refreshToken을 비교
-         - 다르다면 refresh process 종료
-        3. accessToken 발급
-         - refreshToken의 만료시간을 현재 시간 기준으로 업데이트한다
+        3. accessToken / refreshToken 신규 발급
+        4. DB에 refreshToken 정보 업데이트
     """
 
     # AES Encryption Instance
@@ -318,14 +317,16 @@ async def web_token_refresh(*,
     if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
         raise credentials_exception
 
-    new_token = await create_access_token(sub=token.sub)
-    new_access_token = new_token.token
+    new_token = await create_new_jwt_token(sub=token.sub)
+    update_token = UpdateTokenSchema(user_id=int(token.sub),
+                                     old_access_token=token.access_token,
+                                     new_access_token=new_token.access_token,
+                                     refresh_token_key=Hasher.hmac_sha256(new_token.refresh_token),
+                                     refresh_token=aes.encrypt(new_token.refresh_token),
+                                     expires_at=datetime.fromtimestamp(int(new_token.refresh_token_expires_in)))
 
     try:
-        await token_dal.update(user_id=int(token.sub),
-                               old_access_token=token.access_token,
-                               new_access_token=new_access_token,
-                               expires_at=new_refresh_token_expires())
+        await token_dal.update(update_token)
 
         await session.commit()
     except Exception as e:
@@ -336,7 +337,8 @@ async def web_token_refresh(*,
     else:
         # Cookie에 accessToken을 업데이트한다
         response = JSONResponse({'message': 'refresh success'})
-        response.set_cookie(key='access_token', value=f'{new_access_token}', httponly=True)
+        response.set_cookie(key='access_token', value=f'{new_token.access_token}', httponly=True)
+        response.set_cookie(key='refresh_token', value=f'{new_token.refresh_token}', httponly=True)
 
         return response
     finally:
