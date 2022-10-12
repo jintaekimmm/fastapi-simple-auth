@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, DateTime, String
+from sqlalchemy import Column, Integer, SmallInteger, DateTime, String, BINARY
 
 from db.base import Base
 from models.mixin import TimestampMixin
@@ -18,3 +18,4 @@ class User(Base, TimestampMixin):
     is_admin = Column(SmallInteger, default=0)
     is_active = Column(SmallInteger, default=0)
     last_login = Column(DateTime, default=None)
+    last_login_ip = Column(BINARY(16))

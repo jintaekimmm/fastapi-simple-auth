@@ -56,7 +56,7 @@ async def signup(*,
         app_logger.error(e)
         await session.rollback()
         return JSONResponse({'message': 'Failed to insert data'},
-                            status_code=status.HTTP_500_UNAUTHORIZED)
+                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     finally:
         await session.close()

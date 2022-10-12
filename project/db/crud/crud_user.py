@@ -1,4 +1,7 @@
-from sqlalchemy import insert
+import ipaddress
+from datetime import datetime
+
+from sqlalchemy import insert, update, func
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,3 +74,30 @@ class UserDAL:
         result = await self.session.execute(q)
 
         return bool(result.all())
+
+    async def update_last_login(self,
+                                user_id: int,
+                                login_ip: str) -> None:
+        """
+        마지막 로그인 접속 정보를 업데이트한다
+         - 마지막 로그인 시간
+         - 마지막 로그인 IP
+        """
+
+        def is_ipv4(ip):
+            try:
+                if ipaddress.IPv4Address(ip):
+                    return True
+                return False
+            except ValueError:
+                return False
+
+        f = func.if_(is_ipv4(login_ip), func.inet_aton(login_ip), func.inet6_aton(login_ip))
+
+        q = update(User) \
+            .where(User.id == user_id) \
+            .values(last_login=datetime.now()) \
+            .values(last_login_ip=f) \
+            .execution_options(synchronize_session="fetch")
+
+        await self.session.execute(q)

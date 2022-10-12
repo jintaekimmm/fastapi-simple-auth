@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,7 @@ router = APIRouter(prefix='/v1/auth', tags=['auth'])
 
 @router.post('/api/login', response_model=CreateTokenSchema)
 async def api_login(*,
+                    request: Request,
                     login_info: LoginRequestSchema,
                     session: AsyncSession = Depends(get_session)):
     """
@@ -60,9 +61,12 @@ async def api_login(*,
                                              issued_at=datetime.fromtimestamp(int(token.iat)),
                                              expires_at=datetime.fromtimestamp(int(token.refresh_token_expires_in)))
 
-    # RefreshToken을 저장한다
     try:
+        # RefreshToken을 저장한다
         await r_token_dal.insert(insert_refresh_token)
+        # 마지막 로그인 정보를 업데이트한다
+        await user_dal.update_last_login(user_id=user.id, login_ip=request.client.host)
+
         await session.commit()
     except Exception as e:
         app_logger.error(e)
@@ -77,6 +81,7 @@ async def api_login(*,
 
 @router.post('/web/login')
 async def web_login(*,
+                    request: Request,
                     login_info: LoginRequestSchema,
                     session: AsyncSession = Depends(get_session)):
     """
@@ -118,9 +123,12 @@ async def web_login(*,
                                              issued_at=datetime.fromtimestamp(int(token.iat)),
                                              expires_at=datetime.fromtimestamp(int(token.refresh_token_expires_in)))
 
-    # RefreshToken을 저장한다
     try:
+        # RefreshToken을 저장한다
         await r_token_dal.insert(insert_refresh_token)
+        # 마지막 로그인 정보를 업데이트한다
+        await user_dal.update_last_login(user_id=user.id, login_ip=request.client.host)
+
         await session.commit()
     except Exception as e:
         app_logger.error(e)
