@@ -9,6 +9,27 @@ Oauth 2.0을 제대로 본 이후에 잘못된 것 같은 부분은 수정할 �
 
 화면(Front-end)에서 어떻게 사용할 지에 대해서는 완벽히 고려된 것이 아니므로 실제 사용성과 관련해서는 괴리감이 있을 수 있습니다. 
 
+### .env example
+```bash
+# ENCRYPTION
+PASSWORD_SECRET_KEY={secret_key}
+AES_ENCRYPT_KEY={secret_key}
+BLIND_INDEX_KEY={secret_key}
+
+#JWT
+JWT_ACCESS_SECRET_KEY={secret_key}
+JWT_REFRESH_SECRET_KEY={secret_key}
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15
+JWT_REFRESH_TOKEN_EXPIRE_MINUTES=10080
+
+# DATABASE
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USER=
+DB_PASSWORD=
+```
+
 ## Structure 
 
 ```bash
@@ -60,6 +81,7 @@ project/
 ```
 
 ## API Endpoints
+
 ![API Endpoint](https://user-images.githubusercontent.com/31076511/195282934-2483a625-9d1f-45a6-9c94-f4092179dccb.png)
 
 ## Auth Implements
@@ -131,8 +153,10 @@ CREATE TABLE `token`
 개인 정보(email, mobile)는 AES 256으로 암호화 하였고, 검색을 위한 blind index를 설정했다 
 
 ### Endpoint
+[/v1/signup](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/user.py#L15)
+
 ```bash
-POST /v1/signup
+POST /v1/signup 
 ```
 
 ### Request
@@ -173,6 +197,8 @@ Token을 반환하는 두 가지 방식에 따라 API를 나누어서 구현하�
 ![Login Process](https://user-images.githubusercontent.com/31076511/195269797-1e881aaa-bf1e-447e-b1c9-49cbb9316f2c.png)
 
 ### Endpoint
+[/v1/auth/api/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L21)
+[/v1/auth/web/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L83)
 ```bash
 /v1/auth/api/login : JWT Token을 JSON 으로 반환 
 /v1/auth/web/login : JWT Token을 Cookie(httpOnly)로 반환
@@ -226,7 +252,6 @@ access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY1NTU2Mjk0IiwiZX
 refresh_token=31f84b4c3fa8d1eb71c036e7e4cc6931d45de42a80521c18308f58fadcdcf95e; Path=/; HttpOnly;
 ```
 
-
 ## 로그아웃 API
 
 두 가지(Header, Cookie) 요청 타입에 따라 API를 나누어서 구현하였다
@@ -239,6 +264,8 @@ Redis에 유효시간이 남은 시간 만큼 TTL을 설정하여 저장한다�
 ![Logout Process](https://user-images.githubusercontent.com/31076511/195273518-6c6a0a3e-1be4-4afe-b120-3c760d669f17.png)
 
 ### Endpoint
+[/v1/auth/api/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L149)
+[/v1/auth/web/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L187)
 ```bash
 /v1/auth/api/logout : accessToken을 Authroization Header로 전달 
 /v1/auth/web/logout : accessToken을 Cookie(httpOnly)로 전달
@@ -272,7 +299,6 @@ curl --location --request POST 'http://localhost:9000/v1/auth/web/logout' \
 }
 ```
 
-
 ## 토큰 갱신(refresh Token)
 
 accessToken 유효 시간 갱신을 위해 refreshToken을 사용하여 재발급 받는다
@@ -300,6 +326,8 @@ accessToken을 갱신할 때에 refreshToken을 어떻게 할 것인가 에 대�
 
 
 ### Endpoint
+[/v1/auth/api/token/refresh](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L232)
+[/v1/auth/api/token/refresht](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L283)
 ```bash
 /v1/auth/api/token/refresh : accessToken을 Authroization Header로 전달 
 /v1/auth/api/token/refresh : accessToken을 Cookie(httpOnly)로 전달
