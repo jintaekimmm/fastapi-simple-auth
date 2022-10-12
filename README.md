@@ -198,6 +198,7 @@ Token을 반환하는 두 가지 방식에 따라 API를 나누어서 구현하�
 
 ### Endpoint
 [/v1/auth/api/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L21)
+
 [/v1/auth/web/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L83)
 ```bash
 /v1/auth/api/login : JWT Token을 JSON 으로 반환 
@@ -265,6 +266,7 @@ Redis에 유효시간이 남은 시간 만큼 TTL을 설정하여 저장한다�
 
 ### Endpoint
 [/v1/auth/api/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L149)
+
 [/v1/auth/web/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L187)
 ```bash
 /v1/auth/api/logout : accessToken을 Authroization Header로 전달 
@@ -327,6 +329,7 @@ accessToken을 갱신할 때에 refreshToken을 어떻게 할 것인가 에 대�
 
 ### Endpoint
 [/v1/auth/api/token/refresh](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L232)
+
 [/v1/auth/api/token/refresht](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L283)
 ```bash
 /v1/auth/api/token/refresh : accessToken을 Authroization Header로 전달 
