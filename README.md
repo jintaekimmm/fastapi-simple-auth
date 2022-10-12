@@ -188,6 +188,17 @@ Token을 반환하는 두 가지 방식에 따라 API를 나누어서 구현하�
 >  또한 token을 어디에다가(local Storage, Cookie...) 저장하는 것에 대한 많은 의견을 보았으나 이 또한 서비스 환경에 따라 선택이 달라질 것이므로
 > 
 > 값을 직접 사용할 수 있도록 **JSON으로 반환**하는 것과 **cookie(httpOnly)에 설정**하는 것 두 가지로 나누어서 구현하였습니다
+> 
+> [where-to-store-jwt-in-browser-how-to-protect-against-csrf](https://stackoverflow.com/questions/27067251/where-to-store-jwt-in-browser-how-to-protect-against-csrf/) 에서 나오는 'Double Submit Cookies Method'와 같이 구현하려 했으나, 
+> 
+> 로컬 HTTPS 개발 환경이 준비되지 않은 상태라 Secure cookie가 적용되어 있지 않습니다 
+> 
+> 적용을 원한다면 set_cookie function의 secure 파라미터를 설정해주면 됩니다
+
+```python
+current : response.set_cookie(key='access_token', value=f'{new_token.access_token}', httponly=True)
+change  : response.set_cookie(key='access_token', value=f'{new_token.access_token}', httponly=True, secure=True)
+```
 
 > accessToken은 JWT로 생성한다
 
