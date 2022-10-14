@@ -24,6 +24,7 @@ async def list_permissions(*,
     perm_dal = PermissionsDAL(session=session)
 
     try:
+        # TODO: Pagination
         perm_list = await perm_dal.list()
         responses = PermissionListResponseSchema(data=[
             PermissionBaseSchema(id=perm.id,
@@ -95,7 +96,6 @@ async def get_permissions(*,
 
     return PermissionBaseSchema(id=perm.id,
                                 name=perm.name,
-                                slug=perm.slug,
                                 content=perm.content,
                                 created_at=perm.created_at,
                                 updated_at=perm.updated_at)

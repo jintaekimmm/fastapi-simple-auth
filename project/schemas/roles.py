@@ -1,10 +1,12 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, validator
 
+from schemas.permissions import PermissionNameSchema, PermissionBaseSchema
 
-class PermissionBaseSchema(BaseModel):
+
+class RoleBaseSchema(BaseModel):
     id: Optional[int]
     name: str
     slug: Optional[str]
@@ -19,27 +21,18 @@ class PermissionBaseSchema(BaseModel):
         return v
 
     class Config:
-        fields = {
-            'id': {
-                'exclude': True
-            },
-            'slug': {
-                'exclude': True
-            }
-        }
-
-
-class PermissionListResponseSchema(BaseModel):
-    data: List[PermissionBaseSchema] = []
-
-    class Config:
         orm_mode = True
 
 
-class PermissionCreateUpdateRequestSchema(BaseModel):
+class RoleListResponseSchema(BaseModel):
+    data: List[RoleBaseSchema]
+
+
+class RoleCreateUpdateRequestSchema(BaseModel):
     name: str
     slug: Optional[str]
     content: Optional[str] = ''
+    permissions: List[PermissionNameSchema] = []
 
     @validator('name')
     def name_required_validator(cls, v):
@@ -57,11 +50,25 @@ class PermissionCreateUpdateRequestSchema(BaseModel):
         orm_mode = True
 
 
-class PermissionNameSchema(BaseModel):
-    name: str
+class RolePermissionSchema(BaseModel):
+    id: Optional[int]
+    role_id: int
+    permission_id: int
 
-    @validator('name')
-    def name_required_validator(cls, v):
+    @validator('role_id', 'permission_id')
+    def required_validator(cls, v):
         if not v:
             raise ValueError('value required')
         return v
+
+
+class RolesAndPermissionResponseSchema(RoleBaseSchema):
+    permissions: List[PermissionBaseSchema]
+
+    class Config:
+        orm_mode = True
+        fields = {
+            'slug': {
+                'exclude': True
+            }
+        }

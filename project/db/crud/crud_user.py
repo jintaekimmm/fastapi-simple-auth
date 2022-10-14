@@ -3,16 +3,13 @@ from datetime import datetime
 
 from sqlalchemy import insert, update, func
 from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.crud.abstract import DalABC
 from models.user import User
 from schemas.user import SignUpBaseSchema
 
 
-class UserDAL:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class UserDAL(DalABC):
     async def get_all_users(self):
         """
         모든 사용자 정보를 반환한다

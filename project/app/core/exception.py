@@ -17,6 +17,13 @@ not_found_exception = HTTPException(
 )
 
 
+def bag_request_param_exception(msg: str):
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=msg
+    )
+
+
 def delete_denied_exception(msg: str):
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,

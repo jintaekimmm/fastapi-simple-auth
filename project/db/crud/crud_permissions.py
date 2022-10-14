@@ -1,18 +1,16 @@
 from typing import List
 
+from slugify import slugify
 from sqlalchemy import insert, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from db.crud.abstract import DalABC
 from models.permissions import Permissions
 from models.roles import RolesPermissions, Roles
 from schemas.permissions import PermissionCreateUpdateRequestSchema
 
 
-class PermissionsDAL:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class PermissionsDAL(DalABC):
     async def list(self) -> List[Permissions]:
         q = select(Permissions)
 
@@ -28,6 +26,13 @@ class PermissionsDAL:
 
         result = await self.session.execute(q)
         return result.scalars().first()
+
+    async def get_by_name(self, name: List[str]) -> List[Permissions]:
+        slug = [slugify(i) for i in name]
+        q = select(Permissions).where(Permissions.slug.in_(slug))
+
+        result = await self.session.execute(q)
+        return result.scalars().all()
 
     async def update(self, perm_id: int, permission: PermissionCreateUpdateRequestSchema) -> None:
         q = update(Permissions) \
@@ -56,6 +61,14 @@ class PermissionsDAL:
             .join(RolesPermissions, RolesPermissions.role_id == Roles.id) \
             .join(Permissions.id, Permissions.id == RolesPermissions.permission_id) \
             .where(Permissions.id == perm_id)
+
+        result = await self.session.execute(q)
+        return result.scalars().all()
+
+    async def get_permissions_relation_roles(self, role_id: int) -> List[Permissions]:
+        q = select(Permissions) \
+            .join(RolesPermissions, RolesPermissions.permission_id == Permissions.id) \
+            .where(RolesPermissions.role_id == role_id)
 
         result = await self.session.execute(q)
         return result.scalars().all()
