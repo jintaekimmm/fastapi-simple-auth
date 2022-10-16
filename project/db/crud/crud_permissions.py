@@ -49,22 +49,6 @@ class PermissionsDAL(DalABC):
 
         await self.session.execute(q)
 
-    async def exists_relation_roles(self, perm_id: int) -> bool:
-        q = select(RolesPermissions) \
-            .where(RolesPermissions.permission_id == perm_id)
-
-        result = await self.session.execute(q)
-        return bool(result.scalars().all())
-
-    async def get_roles_relation_permissions(self, perm_id: int):
-        q = select(Roles.name) \
-            .join(RolesPermissions, RolesPermissions.role_id == Roles.id) \
-            .join(Permissions.id, Permissions.id == RolesPermissions.permission_id) \
-            .where(Permissions.id == perm_id)
-
-        result = await self.session.execute(q)
-        return result.scalars().all()
-
     async def get_permissions_relation_roles(self, role_id: int) -> List[Permissions]:
         q = select(Permissions) \
             .join(RolesPermissions, RolesPermissions.permission_id == Permissions.id) \

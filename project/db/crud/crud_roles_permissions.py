@@ -3,7 +3,6 @@ from typing import List
 from slugify import slugify
 from sqlalchemy import insert, delete
 from sqlalchemy.future import select
-from sqlalchemy.orm import aliased
 
 from db.crud.abstract import DalABC
 from models.permissions import Permissions
@@ -45,3 +44,17 @@ class RolesPermissionsDAL(DalABC):
             .execution_options(synchronize_session="fetch")
 
         await self.session.execute(q)
+
+    async def exists_relation_roles(self, perm_id: int) -> bool:
+        q = select(RolesPermissions) \
+            .where(RolesPermissions.permission_id == perm_id)
+
+        result = await self.session.execute(q)
+        return bool(result.scalars().all())
+
+    async def exists_relation_permissions(self, role_id: int) -> bool:
+        q = select(RolesPermissions) \
+            .where(RolesPermissions.role_id == role_id)
+
+        result = await self.session.execute(q)
+        return bool(result.scalars().all())

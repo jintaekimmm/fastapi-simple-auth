@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exception import not_found_exception, internal_server_exception, delete_denied_exception
 from db.crud.crud_permissions import PermissionsDAL
+from db.crud.crud_roles import RolesDAL
+from db.crud.crud_roles_permissions import RolesPermissionsDAL
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema, PermissionCreateUpdateRequestSchema
@@ -142,16 +144,18 @@ async def delete_permissions(*,
     """
 
     # Database Instance
+    role_dal = RolesDAL(session=session)
     perm_dal = PermissionsDAL(session=session)
+    role_perm_dal = RolesPermissionsDAL(session=session)
 
     try:
         perm = await perm_dal.get(perm_id=perm_id)
         if not perm:
             raise not_found_exception
         # Permission과 연결된 Role이 존재하는지 확인한다
-        if await perm_dal.exists_relation_roles(perm_id=perm_id):
+        if await role_perm_dal.exists_relation_roles(perm_id=perm_id):
             # Permission 과 연결된 Role의 이름을 가져온다
-            result = await perm_dal.get_roles_relation_permissions(perm_id=perm_id)
+            result = await role_dal.get_roles_relation_permissions(perm_id=perm_id)
             msg = ', '.join(result)
             if msg:
                 delete_denied_exception(f"can't delete permission. "

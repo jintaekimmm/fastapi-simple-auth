@@ -4,7 +4,8 @@ from sqlalchemy import insert, update, delete
 from sqlalchemy.future import select
 
 from db.crud.abstract import DalABC
-from models.roles import Roles
+from models.permissions import Permissions
+from models.roles import Roles, RolesPermissions
 from schemas.roles import RoleCreateUpdateRequestSchema
 
 
@@ -48,3 +49,12 @@ class RolesDAL(DalABC):
             .execution_options(synchronize_session="fetch")
 
         await self.session.execute(q)
+
+    async def get_roles_relation_permissions(self, perm_id: int):
+        q = select(Roles.name) \
+            .join(RolesPermissions, RolesPermissions.role_id == Roles.id) \
+            .join(Permissions.id, Permissions.id == RolesPermissions.permission_id) \
+            .where(Permissions.id == perm_id)
+
+        result = await self.session.execute(q)
+        return result.scalars().all()

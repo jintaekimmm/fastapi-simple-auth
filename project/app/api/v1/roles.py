@@ -4,7 +4,8 @@ from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import internal_server_exception, bag_request_param_exception, not_found_exception
+from app.core.exception import internal_server_exception, bag_request_param_exception, not_found_exception, \
+    delete_denied_exception
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
@@ -215,8 +216,39 @@ async def update_roles(*,
 
 
 @router.delete('/{role_id}')
-async def delete_roles(role_id: int):
+async def delete_roles(*,
+                       role_id: int,
+                       session: AsyncSession = Depends(get_session)):
     """
     Delete Roles API
     """
-    pass
+
+    # Database Instnace
+    role_dal = RolesDAL(session=session)
+    perm_dal = PermissionsDAL(session=session)
+    role_perm_dal = RolesPermissionsDAL(session=session)
+
+    try:
+        role = await role_dal.get(role_id=role_id)
+        if not role:
+            raise not_found_exception
+        # Role과 연결된 Permission이 존재하는지 확인한다
+        if await role_perm_dal.exists_relation_permissions(role_id=role_id):
+            # Role과 연결된 Permission의 이름을 가져온다
+            result = await perm_dal.get_permissions_relation_roles(role_id=role_id)
+            msg = ', '.join([i.name for i in result])
+            if msg:
+                delete_denied_exception(f"can't delete role. "
+                                        f"because '{msg}' currently assigned to this role")
+
+        await role_dal.delete(role_id=role_id)
+
+        await session.commit()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        raise internal_server_exception
+    finally:
+        await session.close()
