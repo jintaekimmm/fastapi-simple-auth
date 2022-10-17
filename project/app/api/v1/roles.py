@@ -91,7 +91,8 @@ async def create_roles(*,
 
         # Insert Role - Permission Relation
         insert_role_perm = [RolePermissionSchema(role_id=role_id, permission_id=i.id) for i in perm_result]
-        await role_perm_dal.bulk_insert(insert_role_perm)
+        if insert_role_perm:
+            await role_perm_dal.bulk_insert(insert_role_perm)
 
         await session.commit()
     except HTTPException as e:
