@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.responses import JSONResponse
 from slugify import slugify
 from sqlalchemy.exc import IntegrityError
@@ -57,11 +57,20 @@ async def create_permissions(*,
     perm_info.slug = slugify(perm_info.name)
 
     try:
-        await perm_dal.insert(permission=perm_info)
+        try:
+            perm_result = await perm_dal.insert(permission=perm_info)
+        except IntegrityError:
+            await session.rollback()
+            return JSONResponse({'message': 'permission already exists'}, status_code=status.HTTP_409_CONFLICT)
+
+        try:
+            perm_id = perm_result.inserted_primary_key[0]
+        except IndexError:
+            await session.rollback()
+            return JSONResponse({'message': 'permission create failed'}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         await session.commit()
-    except IntegrityError:
-        await session.rollback()
-        return JSONResponse({'message': 'permission already exists'}, status_code=status.HTTP_409_CONFLICT)
+
     except Exception as e:
         app_logger.error(e)
         await session.rollback()
@@ -69,7 +78,10 @@ async def create_permissions(*,
     finally:
         await session.close()
 
-    return JSONResponse(None, status_code=status.HTTP_201_CREATED)
+    # Add Location Header
+    new_resource_uri = router.url_path_for('get_permissions', perm_id=perm_id)
+    headers = {'Location': new_resource_uri}
+    return JSONResponse(None, status_code=status.HTTP_201_CREATED, headers=headers)
 
 
 @router.get('/{perm_id}', response_model=PermissionBaseSchema)

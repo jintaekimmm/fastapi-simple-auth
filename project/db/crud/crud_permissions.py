@@ -2,6 +2,7 @@ from typing import List
 
 from slugify import slugify
 from sqlalchemy import insert, update, delete
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.future import select
 
 from db.crud.abstract import DalABC
@@ -17,9 +18,11 @@ class PermissionsDAL(DalABC):
         result = await self.session.execute(q)
         return result.scalars().all()
 
-    async def insert(self, permission: PermissionCreateUpdateRequestSchema) -> None:
+    async def insert(self, permission: PermissionCreateUpdateRequestSchema) -> CursorResult:
         q = insert(Permissions).values(**permission.dict())
-        await self.session.execute(q)
+
+        result = await self.session.execute(q)
+        return result
 
     async def get(self, perm_id: int) -> Permissions:
         q = select(Permissions).where(Permissions.id == perm_id)

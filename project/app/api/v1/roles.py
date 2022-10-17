@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import JSONResponse
 from slugify import slugify
 from sqlalchemy.exc import IntegrityError
@@ -104,7 +104,10 @@ async def create_roles(*,
     finally:
         await session.close()
 
-    return JSONResponse(None, status_code=status.HTTP_201_CREATED)
+    # Add Location Header
+    new_resource_uri = router.url_path_for('get_roles', role_id=role_id)
+    headers = {'Location': new_resource_uri}
+    return JSONResponse(None, status_code=status.HTTP_201_CREATED, headers=headers)
 
 
 @router.get('/{role_id}', response_model=RolesAndPermissionResponseSchema)

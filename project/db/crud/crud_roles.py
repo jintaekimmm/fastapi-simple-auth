@@ -1,6 +1,7 @@
 from typing import List
 
 from sqlalchemy import insert, update, delete
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.future import select
 
 from db.crud.abstract import DalABC
@@ -16,7 +17,7 @@ class RolesDAL(DalABC):
         result = await self.session.execute(q)
         return result.scalars().all()
 
-    async def insert(self, role: RoleCreateUpdateRequestSchema):
+    async def insert(self, role: RoleCreateUpdateRequestSchema) -> CursorResult:
         data = role.dict()
         del data['permissions']
         q = insert(Roles).values(**data)
