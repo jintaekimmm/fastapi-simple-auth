@@ -190,6 +190,11 @@ async def update_roles(*,
                                                         for i in found_perm])
 
         await session.commit()
+    except IntegrityError as e:
+        app_logger.error(e)
+        await session.rollback()
+        return JSONResponse({"message": f"role '{role_info.name}' is already exists"}, status_code=status.HTTP_409_CONFLICT)
+
     except Exception as e:
         app_logger.error(e)
         await session.rollback()
