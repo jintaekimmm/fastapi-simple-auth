@@ -153,11 +153,7 @@ CREATE TABLE `token`
 개인 정보(email, mobile)는 AES 256으로 암호화 하였고, 검색을 위한 blind index를 설정했다 
 
 ### Endpoint
-[/v1/signup](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/user.py#L15)
-
-```bash
-POST /v1/signup 
-```
+POST [/v1/signup](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/user.py#L15)
 
 ### Request
 ```bash
@@ -208,13 +204,9 @@ change  : response.set_cookie(key='access_token', value=f'{new_token.access_toke
 ![Login Process](https://user-images.githubusercontent.com/31076511/195269797-1e881aaa-bf1e-447e-b1c9-49cbb9316f2c.png)
 
 ### Endpoint
-[/v1/auth/api/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L21)
+POST [/v1/auth/api/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L21) : JWT Token을 JSON 으로 반환 
 
-[/v1/auth/web/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L83)
-```bash
-/v1/auth/api/login : JWT Token을 JSON 으로 반환 
-/v1/auth/web/login : JWT Token을 Cookie(httpOnly)로 반환
-```
+POST [/v1/auth/web/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L83) : JWT Token을 Cookie(httpOnly)로 반환
 
 ### Request
 /v1/auth/api/login
@@ -276,13 +268,9 @@ Redis에 유효시간이 남은 시간 만큼 TTL을 설정하여 저장한다�
 ![Logout Process](https://user-images.githubusercontent.com/31076511/195273518-6c6a0a3e-1be4-4afe-b120-3c760d669f17.png)
 
 ### Endpoint
-[/v1/auth/api/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L149)
+POST [/v1/auth/api/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L149) : accessToken을 Authroization Header로 전달
 
-[/v1/auth/web/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L187)
-```bash
-/v1/auth/api/logout : accessToken을 Authroization Header로 전달 
-/v1/auth/web/logout : accessToken을 Cookie(httpOnly)로 전달
-```
+POST [/v1/auth/web/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L187) : accessToken을 Cookie(httpOnly)로 전달
 
 ### Request
 /v1/auth/api/logout
@@ -339,14 +327,9 @@ accessToken을 갱신할 때에 refreshToken을 어떻게 할 것인가 에 대�
 
 
 ### Endpoint
-[/v1/auth/api/token/refresh](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L232)
+POST [/v1/auth/api/token/refresh](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L232) : accessToken을 Authroization Header로 전달
 
-[/v1/auth/api/token/refresht](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L283)
-```bash
-/v1/auth/api/token/refresh : accessToken을 Authroization Header로 전달 
-/v1/auth/api/token/refresh : accessToken을 Cookie(httpOnly)로 전달
-```
-
+POST [/v1/auth/api/token/refresht](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L283) : accessToken을 Cookie(httpOnly)로 전달
 
 ### Request
 /v1/auth/api/token/refresh
