@@ -30,8 +30,8 @@ class PermissionsDAL(DalABC):
         result = await self.session.execute(q)
         return result.scalars().first()
 
-    async def get_by_name(self, name: List[str]) -> List[Permissions]:
-        slug = [slugify(i) for i in name]
+    async def get_by_names(self, names: List[str]) -> List[Permissions]:
+        slug = [slugify(i) for i in names]
         q = select(Permissions).where(Permissions.slug.in_(slug))
 
         result = await self.session.execute(q)

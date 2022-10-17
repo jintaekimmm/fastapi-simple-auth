@@ -4,7 +4,7 @@ from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import internal_server_exception, bag_request_param_exception, not_found_exception, \
+from app.core.exception import internal_server_exception, bad_request_param_exception, not_found_exception, \
     delete_denied_exception
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
@@ -68,11 +68,11 @@ async def create_roles(*,
 
     try:
         # 요청 목록과 저장된 목록을 비교한다
-        perm_result = await perm_dal.get_by_name(permissions)
+        perm_result = await perm_dal.get_by_names(permissions)
         not_found_perm = set(permissions).difference(set(i.name for i in perm_result))
         if not_found_perm:
             msg = ', '.join(not_found_perm)
-            raise bag_request_param_exception(f"can't create roles. "
+            raise bad_request_param_exception(f"can't create roles. "
                                               f"because '{msg}' not found permissions")
 
         # Insert role
@@ -167,28 +167,29 @@ async def update_roles(*,
     role_info.slug = slugify(role_info.name)
     # permissions 요청 목록 생성
     permissions = [perm.name for perm in role_info.permissions]
-    role_perm_list = await perm_dal.get_permissions_relation_roles(role_id=role_id)
-
-    # 요청한 permission이 존재하는지 확인한다
-    perm_result = await perm_dal.get_by_name(permissions)
-    not_found_perm = set(permissions).difference(set(i.name for i in perm_result))
-    if not_found_perm:
-        msg = ', '.join(not_found_perm)
-        raise bag_request_param_exception(f"can't create roles. "
-                                          f"because '{msg}' not found permissions")
-
-    # Update(request) payload에 존재하지 않는 것은 삭제한다
-    delete_perm = set(i.name for i in role_perm_list).difference(set(permissions))
-    # Database에 존재하지 않는 것은 추가한다
-    insert_perm = set(permissions).difference(set(i.name for i in role_perm_list))
 
     try:
+        # 요청한 permission이 존재하는지 확인한다
+        perm_result = await perm_dal.get_by_names(permissions)
+        not_found_perm = set(permissions).difference(set(i.name for i in perm_result))
+        if not_found_perm:
+            msg = ', '.join(not_found_perm)
+            raise bad_request_param_exception(f"can't create roles. "
+                                              f"because '{msg}' not found permissions")
+
+        role_perm_list = await perm_dal.get_permissions_relation_roles(role_id=role_id)
+
+        # Update(request) payload에 존재하지 않는 것은 삭제한다
+        delete_perm = set(i.name for i in role_perm_list).difference(set(permissions))
+        # Database에 존재하지 않는 것은 추가한다
+        insert_perm = set(permissions).difference(set(i.name for i in role_perm_list))
+
         await role_dal.update(role_id=role_id, role=role_info)
         if delete_perm:
             await role_perm_dal.delete_by_permission_name(role_id=role_id, permission_names=list(delete_perm))
 
         if insert_perm:
-            found_perm = await perm_dal.get_by_name(list(insert_perm))
+            found_perm = await perm_dal.get_by_names(list(insert_perm))
             await role_perm_dal.bulk_insert(role_perms=[RolePermissionSchema(role_id=role_id, permission_id=i.id)
                                                         for i in found_perm])
 
@@ -196,7 +197,8 @@ async def update_roles(*,
     except IntegrityError as e:
         app_logger.error(e)
         await session.rollback()
-        return JSONResponse({"message": f"role '{role_info.name}' is already exists"}, status_code=status.HTTP_409_CONFLICT)
+        return JSONResponse({"message": f"role '{role_info.name}' is already exists"},
+                            status_code=status.HTTP_409_CONFLICT)
 
     except Exception as e:
         app_logger.error(e)
@@ -224,7 +226,7 @@ async def update_roles(*,
     )
 
 
-@router.delete('/{role_id}')
+@router.delete('/{role_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_roles(*,
                        role_id: int,
                        session: AsyncSession = Depends(get_session)):

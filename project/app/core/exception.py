@@ -17,7 +17,14 @@ not_found_exception = HTTPException(
 )
 
 
-def bag_request_param_exception(msg: str):
+def not_found_param_exception(msg: str):
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=msg
+    )
+
+
+def bad_request_param_exception(msg: str):
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=msg

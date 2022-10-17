@@ -17,23 +17,6 @@ class RolesPermissionsDAL(DalABC):
 
         await self.session.execute(q)
 
-    async def insert_by_role_names(self, role_names: List[str]):
-        pass
-
-    async def delete_by_role_names(self, role_names: List[str]):
-        pass
-
-    async def get_by_role(self, role_id: int) -> List[RolesPermissions]:
-        q = select(RolesPermissions) \
-            .where(RolesPermissions.role_id == role_id) \
-            .execution_options(synchronize_session="fetch")
-
-        result = await self.session.execute(q)
-        return result.scalras().all()
-
-    async def delete_by_role(self, role_id: int):
-        pass
-
     async def delete_by_permission_name(self, role_id: int, permission_names: List[str]):
         slugs = [slugify(i) for i in permission_names]
         sub_q = select(Permissions.id).where(Permissions.slug.in_(slugs)).scalar_subquery()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, DateTime, String, BINARY
+from sqlalchemy import Column, Integer, SmallInteger, DateTime, String, BINARY, UniqueConstraint
 
 from db.base import Base
 from models.mixin import TimestampMixin
@@ -19,3 +19,13 @@ class User(Base, TimestampMixin):
     is_active = Column(SmallInteger, default=0)
     last_login = Column(DateTime, default=None)
     last_login_ip = Column(BINARY(16))
+
+
+class UsersRoles(Base):
+    __tablename__ = 'users_roles'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    role_id = Column(Integer, nullable=False, index=True)
+
+    UniqueConstraint('user_id', 'role_id', name='users_roles')
