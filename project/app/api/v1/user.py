@@ -4,11 +4,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exception import internal_server_exception, not_found_exception, not_found_param_exception
+from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_user import UserDAL
 from db.crud.crud_users_roles import UsersRolesDAL
 from dependencies.database import get_session
 from internal.logging import app_logger
+from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema
 from schemas.roles import RoleListResponseSchema, RoleBaseSchema
 from schemas.user import UserAssignedRoleRequestSchema, UserAssignedRoleUpdateSchema, UserRolesSchema
 
@@ -53,6 +55,47 @@ async def get_user_roles(*,
                        updated_at=role.updated_at)
         for role in role_list
     ])
+
+    return responses
+
+
+@router.get('/users/{user_id}/permissions', response_model=PermissionListResponseSchema)
+async def get_user_permissions(*,
+                               user_id: int,
+                               session: AsyncSession = Depends(get_session)):
+    """
+    List permissions to a user
+    """
+
+    # Database Instance
+    user_dal = UserDAL(session=session)
+    permission_dal = PermissionsDAL(session=session)
+
+    try:
+        # 사용자가 존재하는지 확인한다
+        user_info = await user_dal.get(user_id=user_id)
+        if not user_info:
+            raise not_found_param_exception(f"user not found")
+
+        perm_list = await permission_dal.get_roles_relation_users(user_id=user_id)
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        raise internal_server_exception
+    finally:
+        await session.close()
+
+    responses = PermissionListResponseSchema(data=[
+        PermissionBaseSchema(id=perm.id,
+                             name=perm.name,
+                             slug=perm.slug,
+                             content=perm.content,
+                             created_at=perm.created_at,
+                             updated_at=perm.updated_at)
+        for perm in perm_list])
 
     return responses
 

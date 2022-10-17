@@ -8,6 +8,7 @@ from sqlalchemy.future import select
 from db.crud.abstract import DalABC
 from models.permissions import Permissions
 from models.roles import RolesPermissions, Roles
+from models.user import UsersRoles
 from schemas.permissions import PermissionCreateUpdateRequestSchema
 
 
@@ -56,6 +57,15 @@ class PermissionsDAL(DalABC):
         q = select(Permissions) \
             .join(RolesPermissions, RolesPermissions.permission_id == Permissions.id) \
             .where(RolesPermissions.role_id == role_id)
+
+        result = await self.session.execute(q)
+        return result.scalars().all()
+
+    async def get_roles_relation_users(self, user_id: int) -> List[Permissions]:
+        q = select(Permissions) \
+            .join(RolesPermissions, RolesPermissions.permission_id == Permissions.id) \
+            .join(UsersRoles, UsersRoles.role_id == RolesPermissions.role_id) \
+            .where(UsersRoles.user_id == user_id)
 
         result = await self.session.execute(q)
         return result.scalars().all()
