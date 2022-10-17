@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from typing import List, Union
+
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -240,3 +242,84 @@ async def remove_user_assigned_role(*,
     finally:
         await session.close()
 
+
+@router.get('/users/{user_id}/has/role')
+async def has_role_for_user(*,
+                            user_id: int,
+                            roles: Union[List[str], None] = Query(default=None),
+                            session: AsyncSession = Depends(get_session)):
+    """
+    Check user has a roles
+    """
+
+    # Database Instance
+    user_dal = UserDAL(session=session)
+    role_dal = RolesDAL(session=session)
+
+    try:
+        # 사용자가 존재하는지 확인한다
+        user_info = await user_dal.get(user_id=user_id)
+        if not user_info:
+            raise not_found_param_exception(f"user not found")
+
+        # role이 존재하는지 확인한다
+        role_result = await role_dal.get_by_names(roles)
+        if not role_result:
+            raise not_found_param_exception(f"role not found")
+
+        # 사용자에게 할당된 role중에 요청 목록과 한개라도 일치하는 것이 있다면 STATUS 200 반환
+        user_has_roles = await role_dal.get_roles_relation_users(user_id=user_id)
+        if any(user.name in roles for user in user_has_roles):
+            return JSONResponse({'result': True})
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        raise internal_server_exception
+    finally:
+        await session.close()
+
+    return JSONResponse({'result': False}, status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.get('/users/{user_id}/has/permission')
+async def has_permission_for_user(*,
+                                  user_id: int,
+                                  permissions: Union[List[str], None] = Query(default=None),
+                                  session: AsyncSession = Depends(get_session)):
+    """
+    check user has a permissions
+    """
+
+    # Database Instance
+    user_dal = UserDAL(session=session)
+    perm_dal = PermissionsDAL(session=session)
+
+    try:
+        # 사용자가 존재하는지 확인한다
+        user_info = await user_dal.get(user_id=user_id)
+        if not user_info:
+            raise not_found_param_exception(f"user not found")
+
+        # permission이 존재하는지 확인한다
+        perm_result = await perm_dal.get_by_names(permissions)
+        if not perm_result:
+            raise not_found_param_exception(f"permission not found")
+
+        # 사용자에게 할당된 permission중에 요청 목록과 한개라도 일치하는 것이 있다면 STATUS 200 반환
+        user_has_perms = await perm_dal.get_roles_relation_users(user_id=user_id)
+        if any(user.name in permissions for user in user_has_perms):
+            return JSONResponse({'result': True})
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        app_logger.error(e)
+        await session.rollback()
+        raise internal_server_exception
+    finally:
+        await session.close()
+
+    return JSONResponse({'result': False}, status_code=status.HTTP_404_NOT_FOUND)
