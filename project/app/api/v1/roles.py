@@ -9,6 +9,7 @@ from app.core.exception import internal_server_exception, bad_request_param_exce
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
+from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.permissions import PermissionBaseSchema
@@ -20,6 +21,7 @@ router = APIRouter(prefix='/v1/roles', tags=['roles'])
 
 @router.get('')
 async def list_roles(*,
+                     _=Depends(AuthorizeTokenUser()),
                      session: AsyncSession = Depends(get_session)):
     """
     All List Roles API
@@ -51,6 +53,7 @@ async def list_roles(*,
 @router.post('')
 async def create_roles(*,
                        role_info: RoleCreateUpdateRequestSchema,
+                       _=Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Create Roles API
@@ -113,6 +116,7 @@ async def create_roles(*,
 @router.get('/{role_id}', response_model=RolesAndPermissionResponseSchema)
 async def get_roles(*,
                     role_id: int,
+                    _=Depends(AuthorizeTokenUser()),
                     session: AsyncSession = Depends(get_session)):
     """
     Get Roles API
@@ -153,6 +157,7 @@ async def get_roles(*,
 async def update_roles(*,
                        role_id: int,
                        role_info: RoleCreateUpdateRequestSchema,
+                       _=Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Update Roles API
@@ -229,6 +234,7 @@ async def update_roles(*,
 @router.delete('/{role_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_roles(*,
                        role_id: int,
+                       _=Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Delete Roles API

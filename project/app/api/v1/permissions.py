@@ -8,6 +8,7 @@ from app.core.exception import not_found_exception, internal_server_exception, d
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
+from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema, PermissionCreateUpdateRequestSchema
@@ -17,6 +18,7 @@ router = APIRouter(prefix='/v1/permissions', tags=['permissions'])
 
 @router.get('', response_model=PermissionListResponseSchema)
 async def list_permissions(*,
+                           _=Depends(AuthorizeTokenUser()),
                            session: AsyncSession = Depends(get_session)):
     """
     All List Permissions API
@@ -46,6 +48,7 @@ async def list_permissions(*,
 @router.post('')
 async def create_permissions(*,
                              perm_info: PermissionCreateUpdateRequestSchema,
+                             _=Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Create Permissions API
@@ -87,6 +90,7 @@ async def create_permissions(*,
 @router.get('/{perm_id}', response_model=PermissionBaseSchema)
 async def get_permissions(*,
                           perm_id: int,
+                          _=Depends(AuthorizeTokenUser()),
                           session: AsyncSession = Depends(get_session)):
     """
     Get Permissions API
@@ -119,6 +123,7 @@ async def get_permissions(*,
 async def update_permissions(*,
                              perm_id: int,
                              perm_info: PermissionCreateUpdateRequestSchema,
+                             _=Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Update Permissions API
@@ -144,12 +149,17 @@ async def update_permissions(*,
     finally:
         await session.close()
 
-    return perm
+    return PermissionBaseSchema(id=perm.id,
+                                name=perm.name,
+                                content=perm.content,
+                                created_at=perm.created_at,
+                                updated_at=perm.updated_at)
 
 
 @router.delete('/{perm_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_permissions(*,
                              perm_id: int,
+                             _=Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Delete Permissions API

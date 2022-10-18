@@ -10,6 +10,7 @@ from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_user import UserDAL
 from db.crud.crud_users_roles import UsersRolesDAL
+from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
 from internal.logging import app_logger
 from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema
@@ -19,9 +20,10 @@ from schemas.user import UserAssignedRoleRequestSchema, UserAssignedRoleUpdateSc
 router = APIRouter(prefix='/v1', tags=['users'])
 
 
-@router.get('/users/{user_id}/roles')
+@router.get('/users/{user_id}/roles', response_model=RoleListResponseSchema)
 async def get_user_roles(*,
                          user_id: int,
+                         _=Depends(AuthorizeTokenUser()),
                          session: AsyncSession = Depends(get_session)):
     """
     List roles assigned to a user
@@ -64,6 +66,7 @@ async def get_user_roles(*,
 @router.get('/users/{user_id}/permissions', response_model=PermissionListResponseSchema)
 async def get_user_permissions(*,
                                user_id: int,
+                               _=Depends(AuthorizeTokenUser()),
                                session: AsyncSession = Depends(get_session)):
     """
     List permissions to a user
@@ -106,6 +109,7 @@ async def get_user_permissions(*,
 async def user_assigned_role(*,
                              user_id: int,
                              role: UserAssignedRoleRequestSchema,
+                             _=Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Add a user Role assignment
@@ -150,10 +154,11 @@ async def user_assigned_role(*,
     return JSONResponse({"message": "user roles have been updated"})
 
 
-@router.put('/users/{user_id}/roles')
+@router.put('/users/{user_id}/roles', response_model=RoleListResponseSchema)
 async def update_user_assigned_roles(*,
                                      user_id: int,
                                      role_info: UserAssignedRoleUpdateSchema,
+                                     _=Depends(AuthorizeTokenUser()),
                                      session: AsyncSession = Depends(get_session)):
     """
     Update user roles assigned
@@ -203,16 +208,29 @@ async def update_user_assigned_roles(*,
         app_logger.error(e)
         await session.rollback()
         raise internal_server_exception
+    else:
+        role_list = await role_dal.get_roles_relation_users(user_id=user_id)
     finally:
         await session.close()
 
-    return JSONResponse({})
+    responses = RoleListResponseSchema(data=[
+        RoleBaseSchema(id=role.id,
+                       name=role.name,
+                       slug=role.slug,
+                       content=role.content,
+                       created_at=role.created_at,
+                       updated_at=role.updated_at)
+        for role in role_list
+    ])
+
+    return responses
 
 
 @router.delete('/users/{user_id}/roles/{role_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def remove_user_assigned_role(*,
                                     user_id: int,
                                     role_id: int,
+                                    _=Depends(AuthorizeTokenUser()),
                                     session: AsyncSession = Depends(get_session)):
     """
     Remove a user role assigned
@@ -247,6 +265,7 @@ async def remove_user_assigned_role(*,
 async def has_role_for_user(*,
                             user_id: int,
                             roles: Union[List[str], None] = Query(default=None),
+                            _=Depends(AuthorizeTokenUser()),
                             session: AsyncSession = Depends(get_session)):
     """
     Check user has a roles
@@ -288,6 +307,7 @@ async def has_role_for_user(*,
 async def has_permission_for_user(*,
                                   user_id: int,
                                   permissions: Union[List[str], None] = Query(default=None),
+                                  _=Depends(AuthorizeTokenUser()),
                                   session: AsyncSession = Depends(get_session)):
     """
     check user has a permissions
