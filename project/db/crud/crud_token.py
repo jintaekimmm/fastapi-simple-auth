@@ -1,17 +1,12 @@
-from datetime import datetime
-
 from sqlalchemy import delete, insert, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from db.crud.abstract import DalABC
 from models.token import Token
 from schemas.token import InsertTokenSchema, UpdateTokenSchema
 
 
-class RefreshTokenDAL:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
+class RefreshTokenDAL(DalABC):
     async def get(self,
                   user_id: int,
                   access_token: str) -> Token:

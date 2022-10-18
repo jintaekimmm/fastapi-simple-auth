@@ -1,23 +1,14 @@
 from typing import Union
 
-from fastapi import Cookie, HTTPException, status, Header
+from fastapi import Cookie, Header
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import jwt
 from pydantic import ValidationError
 
+from app.core.exception import credentials_exception, token_expired_exception
 from internal.config import settings
 from internal.logging import app_logger
 from schemas.token import TokenUser, CookieTokenSchema
-
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Invalid Token"
-)
-
-token_expired_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Token Expired"
-)
 
 
 class AuthorizeCookieUser:

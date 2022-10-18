@@ -1,51 +1,34 @@
-from typing import Optional
+from typing import List
 
-from pydantic import BaseModel, EmailStr, validator
-
-
-class SignUpBaseSchema(BaseModel):
-    first_name: str
-    last_name: str
-    email: str
-    email_key: str
-    mobile: str
-    mobile_key: str
-    password: str
-    is_active: Optional[int] = 0
+from pydantic import validator, BaseModel
 
 
-class SignupRequestSchema(BaseModel):
-    first_name: str
-    last_name: str
-    email: EmailStr
-    mobile: str
-    password1: str
-    password2: str
+class UserAssignedRoleRequestSchema(BaseModel):
+    role: str
 
-    @validator('mobile')
-    def mobile_required_validator(cls, v):
+    @validator('role')
+    def role_required_validator(cls, v):
         if not v:
             raise ValueError('value required')
         return v
 
-    @validator('mobile')
-    def mobile_cleaning(cls, v):
-        return v.replace('-', '')
 
-    @validator('email')
-    def email_required_validator(cls, v):
+class UserRolesSchema(BaseModel):
+    user_id: int
+    role_id: int
+
+    @validator('user_id', 'role_id')
+    def required_validator(cls, v):
         if not v:
             raise ValueError('value required')
         return v
 
-    @validator('password1', 'password2')
-    def password_required_validator(cls, v):
-        if not v:
-            raise ValueError('value required')
-        return v
 
-    @validator('password2')
-    def passwords_match(cls, v, values):
-        if 'password1' in values and v != values['password1']:
-            raise ValueError('passwords do not match')
+class UserAssignedRoleUpdateSchema(BaseModel):
+    roles: List[str]
+
+    @validator('roles')
+    def roles_required_validator(cls, v):
+        if not v or len(v) <= 0:
+            raise ValueError('value required')
         return v

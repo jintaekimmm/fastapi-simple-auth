@@ -1,11 +1,9 @@
 # Simple Auth JWT
 
-JWT를 사용하여 간단한 인증 서버 구현
+JWT를 사용하여 간단한 인증 서버를 구현해본다
 
 ## Introduce
 기존의 작성된 많은 글과 질문/답변을 보고 구현하였습니다. 일부 구현은 여러 선택 사항 중에 주관적인 생각으로 맞다고 하는 것을 기준으로 선택하였습니다
-
-Oauth 2.0을 제대로 본 이후에 잘못된 것 같은 부분은 수정할 예정입니다. 
 
 화면(Front-end)에서 어떻게 사용할 지에 대해서는 완벽히 고려된 것이 아니므로 실제 사용성과 관련해서는 괴리감이 있을 수 있습니다. 
 
@@ -33,63 +31,80 @@ DB_PASSWORD=
 ## Structure 
 
 ```bash
-project/
-├── app
-│   ├── __init__.py
-│   ├── api
+.
+├── README.md
+├── project
+│   ├── app
 │   │   ├── __init__.py
-│   │   └── v1
+│   │   ├── api
+│   │   │   ├── __init__.py
+│   │   │   └── v1
+│   │   │       ├── __init__.py
+│   │   │       ├── auth.py
+│   │   │       ├── permissions.py
+│   │   │       ├── roles.py
+│   │   │       ├── signup.py
+│   │   │       └── user.py
+│   │   ├── core
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── exception.py
+│   │   │   └── security
+│   │   │       ├── __init__.py
+│   │   │       └── encryption.py
+│   │   └── main.py
+│   ├── db
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   └── crud
 │   │       ├── __init__.py
-│   │       ├── auth.py
-│   │       └── user.py
-│   ├── core
+│   │       ├── abstract.py
+│   │       ├── crud_permissions.py
+│   │       ├── crud_roles.py
+│   │       ├── crud_roles_permissions.py
+│   │       ├── crud_token.py
+│   │       ├── crud_user.py
+│   │       └── crud_users_roles.py
+│   ├── dependencies
 │   │   ├── __init__.py
 │   │   ├── auth.py
-│   │   └── security
-│   │       ├── __init__.py
-│   │       └── encryption.py
-│   └── main.py
-├── db
-│   ├── __init__.py
-│   ├── base.py
-│   └── crud
+│   │   └── database.py
+│   ├── gunicorn_conf.py
+│   ├── internal
+│   │   ├── __init__.py
+│   │   ├── config.py
+│   │   └── logging.py
+│   ├── logs
+│   ├── models
+│   │   ├── __init__.py
+│   │   ├── groups.py
+│   │   ├── mixin.py
+│   │   ├── permissions.py
+│   │   ├── roles.py
+│   │   ├── token.py
+│   │   ├── user.py
+│   │   └── user_groups.py
+│   └── schemas
 │       ├── __init__.py
-│       ├── crud_token.py
-│       └── crud_user.py
-├── dependencies
-│   ├── __init__.py
-│   ├── auth.py
-│   └── database.py
-├── gunicorn_conf.py
-├── internal
-│   ├── __init__.py
-│   ├── config.py
-│   └── logging.py
-├── logs
-├── models
-│   ├── __init__.py
-│   ├── groups.py
-│   ├── mixin.py
-│   ├── token.py
-│   ├── user.py
-│   └── user_groups.py
-└── schemas
-    ├── __init__.py
-    ├── auth.py
-    ├── token.py
-    └── user.py
+│       ├── auth.py
+│       ├── permissions.py
+│       ├── roles.py
+│       ├── signup.py
+│       ├── token.py
+│       └── user.py
+└── requirements.txt
 ```
 
-## API Endpoints
-
-![API Endpoint](https://user-images.githubusercontent.com/31076511/195282934-2483a625-9d1f-45a6-9c94-f4092179dccb.png)
-
+# Auth
 ## Auth Implements
 
  * 회원가입
  * 로그인
  * 로그아웃
  * 토큰 갱신(JWT Token Refresh)
+
+## API Endpoints
+![API Endpoint](https://user-images.githubusercontent.com/31076511/196459270-39434a44-963c-4718-ad25-d49ec6dee42f.png)
 
 ## Database
 
@@ -153,11 +168,7 @@ CREATE TABLE `token`
 개인 정보(email, mobile)는 AES 256으로 암호화 하였고, 검색을 위한 blind index를 설정했다 
 
 ### Endpoint
-[/v1/signup](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/user.py#L15)
-
-```bash
-POST /v1/signup 
-```
+POST /v1/signup
 
 ### Request
 ```bash
@@ -208,13 +219,9 @@ change  : response.set_cookie(key='access_token', value=f'{new_token.access_toke
 ![Login Process](https://user-images.githubusercontent.com/31076511/195269797-1e881aaa-bf1e-447e-b1c9-49cbb9316f2c.png)
 
 ### Endpoint
-[/v1/auth/api/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L21)
+POST /v1/auth/api/login : JWT Token을 JSON 으로 반환 
 
-[/v1/auth/web/login](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L83)
-```bash
-/v1/auth/api/login : JWT Token을 JSON 으로 반환 
-/v1/auth/web/login : JWT Token을 Cookie(httpOnly)로 반환
-```
+POST /v1/auth/web/login : JWT Token을 Cookie(httpOnly)로 반환
 
 ### Request
 /v1/auth/api/login
@@ -276,13 +283,9 @@ Redis에 유효시간이 남은 시간 만큼 TTL을 설정하여 저장한다�
 ![Logout Process](https://user-images.githubusercontent.com/31076511/195273518-6c6a0a3e-1be4-4afe-b120-3c760d669f17.png)
 
 ### Endpoint
-[/v1/auth/api/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L149)
+POST /v1/auth/api/logout : accessToken을 Authroization Header로 전달
 
-[/v1/auth/web/logout](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L187)
-```bash
-/v1/auth/api/logout : accessToken을 Authroization Header로 전달 
-/v1/auth/web/logout : accessToken을 Cookie(httpOnly)로 전달
-```
+POST /v1/auth/web/logout : accessToken을 Cookie(httpOnly)로 전달
 
 ### Request
 /v1/auth/api/logout
@@ -339,14 +342,9 @@ accessToken을 갱신할 때에 refreshToken을 어떻게 할 것인가 에 대�
 
 
 ### Endpoint
-[/v1/auth/api/token/refresh](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L232)
+POST /v1/auth/api/token/refresh : accessToken을 Authroization Header로 전달
 
-[/v1/auth/api/token/refresht](https://github.com/99-66/simple-auth-jwt/blob/main/project/app/api/v1/auth.py#L283)
-```bash
-/v1/auth/api/token/refresh : accessToken을 Authroization Header로 전달 
-/v1/auth/api/token/refresh : accessToken을 Cookie(httpOnly)로 전달
-```
-
+POST /v1/auth/api/token/refresh : accessToken을 Cookie(httpOnly)로 전달
 
 ### Request
 /v1/auth/api/token/refresh
@@ -386,6 +384,481 @@ access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY1NTU5NTc4IiwiZX
 refresh_token=525e281c5dfb2c378ebb49c82cd5a46a55474e3446b07f742d590f168ebd1b5f; Path=/; HttpOnly;
 ```
 
+# RBAC
+Role-based access control API
+
+인증은 Authorization Header를 통해 token validation만 체크합니다
+
+## RBAC Implements
+
+ * Role CRUD
+ * Permission CRUD
+ * User assigned Role/Permission
+ * User has a Role/Permission
+
+## Database
+
+Role, Permission을 관리하기 위한 Database schema
+
+## 
+```sql
+CREATE TABLE `roles`
+(
+    id         BIGINT auto_increment primary key,
+    name       VARCHAR(100) not null,
+    slug       VARCHAR(150) not null,
+    content    TEXT         null,
+    created_at DATETIME(6)  not null,
+    updated_at DATETIME(6)  not null,
+    constraint name
+        unique (name),
+
+    INDEX idx_slug (slug ASC)
+);
+
+CREATE TABLE `users_roles`
+(
+    id      BIGINT auto_increment primary key,
+    user_id int not null,
+    role_id int not null,
+    constraint role_permission
+        unique (user_id, role_id),
+
+    INDEX idx_user_id (user_id ASC),
+    INDEX idx_role_id (role_id ASC)
+);
+
+CREATE TABLE `roles_permissions`
+(
+    id            BIGINT auto_increment primary key,
+    role_id       int not null,
+    permission_id int not null,
+    constraint role_permission
+        unique (role_id, permission_id),
+
+    INDEX idx_role_id (role_id ASC),
+    INDEX idx_permission_id (permission_id ASC)
+);
+
+CREATE TABLE `permissions`
+(
+    id         BIGINT auto_increment primary key,
+    name       VARCHAR(100) not null,
+    slug       VARCHAR(150) not null,
+    content    TEXT         null,
+    created_at DATETIME(6)  not null,
+    updated_at DATETIME(6)  not null,
+    constraint name
+        unique (name),
+
+    INDEX idx_slug (slug ASC)
+);
+```
+
+## Roles API
+
+### /v1/roles : Role 목록을 조회한다
+#### Request
+```bash
+GET /v1/roles
+
+curl --location --request GET 'http://localhost:9000/v1/roles' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA0NDgwIiwiZXhwIjoiMTY2NjEwNTM4MCIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.h11FkWlMHtLf_eMTsWK2xR21yNdwis4c_UMVe9GKCys'
+```
+#### Response
+```bash
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "role 23",
+            "slug": "role-23",
+            "content": "",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645974"
+        },
+        {
+            "id": 2,
+            "name": "role1",
+            "slug": "role1",
+            "content": "",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645974"
+        }
+    ]
+}
+```
+
+### POST /v1/roles : Role을 생성한다
+Response header에는 생성된 리소스의 link를 포함하여 반환한다
+
+##### Request
+```bash
+curl --location --request POST 'http://localhost:9000/v1/roles' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA0NDgwIiwiZXhwIjoiMTY2NjEwNTM4MCIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.h11FkWlMHtLf_eMTsWK2xR21yNdwis4c_UMVe9GKCys' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "role test"
+}'
+```
+#### Response
+```bash
+201 Null
+[Header] Location: /v1/roles/3
+```
+
+### GET /v1/roles/{role_id} : 특정 Role을 조회한다
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/roles/3' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA0NDgwIiwiZXhwIjoiMTY2NjEwNTM4MCIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.h11FkWlMHtLf_eMTsWK2xR21yNdwis4c_UMVe9GKCys'
+```
+
+#### Response
+```bash
+[Permission이 포함되지 않았을 경우]
+{
+    "id": 3,
+    "name": "role test",
+    "content": "",
+    "created_at": "2022-10-18T23:46:42.452370",
+    "updated_at": "2022-10-18T23:46:42.452555",
+    "permissions": []
+}
+
+[Permission이 포함되어 있는 경우]
+{
+    "id": 1,
+    "name": "role 23",
+    "content": "",
+    "created_at": "2022-10-17T23:51:03.645799",
+    "updated_at": "2022-10-17T23:51:03.645974",
+    "permissions": [
+        {
+            "name": "pg 2",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "pg 1",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        }
+    ]
+}
+````
+ 
+
+### PUT /v1/roles{role_id} : 특정 Role을 업데이트한다
+##### Request
+```bash
+curl --location --request PUT 'http://localhost:9000/v1/roles/2' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "role1",
+    "permissions": [
+        { "name": "pg 2"}
+    ]
+}'
+```
+#### Response
+```bash
+{
+    "id": 2,
+    "name": "role1",
+    "content": "",
+    "created_at": "2022-10-17T23:51:03.645799",
+    "updated_at": "2022-10-19T00:04:38.817866",
+    "permissions": [
+        {
+            "name": "pg 2",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        }
+    ]
+}
+```
+
+### DELETE /v1/roles/{role_id} : 특정 Role을 삭제한다
+##### Request
+```bash
+curl --location --request DELETE 'http://localhost:9000/v1/roles/5' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+204 Null
+```
+
+## Permissions API
+
+
+### GET /v1/permissions : Permission 목록을 조회한다
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/permissions' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "data": [
+        {
+            "name": "permisson group7 sdfj",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "permisson group1 sdfj",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "pg 2",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "pg 3",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "pg 1",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        },
+        {
+            "name": "pg 11",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        }
+    ]
+}
+```
+
+### POST /v1/permissions : Permission을 생성한다
+Response header에는 생성된 리소스의 link를 포함하여 반환한다
+
+##### Request
+```bash
+curl --location --request POST 'http://localhost:9000/v1/permissions' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "pg 110",
+    "content": "테스트 퍼미션"
+}'
+```
+#### Response
+```bash
+201 Null
+[Header] Location: /v1/permissions/9
+```
+
+### GET /v1/permissions/{perm_id} : 특정 Permission을 조회한다
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/permissions/1' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "name": "permisson group7 sdfj",
+    "content": "테스트 퍼미션",
+    "created_at": "2022-10-17T23:51:03.645799",
+    "updated_at": "2022-10-17T23:51:03.645972"
+}
+```
+
+### PUT /v1/permissions/{perm_id} : 특정 Permission을 업데이트한다
+##### Request
+```bash
+curl --location --request PUT 'http://localhost:9000/v1/permissions/1' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "permissions:read"
+}'
+```
+#### Response
+```bash
+{
+    "name": "permissions:read",
+    "content": "",
+    "created_at": "2022-10-17T23:51:03.645799",
+    "updated_at": "2022-10-19T00:11:07.727856"
+}
+```
+
+### DELETE /v1/permissions/{perm_id} : 특정 Permission을 삭제한다
+Role에 할당된 permission을 삭제하려는 경우에는 에러를 반환한다 
+
+##### Request
+```bash
+curl --location --request DELETE 'http://localhost:9000/v1/permissions/9' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+204 Null
+
+[Error]
+{
+    "detail": "can't delete permission. because 'role 23, role1' currently assigned to this permission"
+}
+```
+
+## Users API
+
+### GET /v1/users/{user_id}/roles : 특정 사용자에게 할당된 Role 목록을 조회한다
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/users/9/roles' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "data": [
+        {
+            "id": 2,
+            "name": "role1",
+            "slug": "role1",
+            "content": "",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-19T00:04:38.817866"
+        }
+    ]
+}
+```
+
+### POST /v1/users/{user_id}/roles : 특정 사용자에게 Role을 할당한다
+##### Request
+```bash
+curl --location --request POST 'http://localhost:9000/v1/users/9/roles' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "role": "role test"
+}'
+```
+#### Response
+```bash
+{
+    "message": "user roles have been updated"
+}
+```
+
+### PUT /v1/users/{user_id}/roles : 특정 사용자에게 할당된 Role을 수정한다
+##### Request
+```bash
+curl --location --request PUT 'http://localhost:9000/v1/users/9/roles' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "roles": ["role1", "role test"]
+}'
+```
+#### Response
+```bash
+{
+    "data": [
+        {
+            "id": 2,
+            "name": "role1",
+            "slug": "role1",
+            "content": "",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-19T00:04:38.817866"
+        },
+        {
+            "id": 3,
+            "name": "role test",
+            "slug": "role-test",
+            "content": "",
+            "created_at": "2022-10-18T23:46:42.452370",
+            "updated_at": "2022-10-18T23:46:42.452555"
+        }
+    ]
+}
+```
+
+### GET /v1/users/{user_id}/permissions : 특정 사용자에게 할당된 Permission 목록을 조회한다
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/users/9/permissions' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "data": [
+        {
+            "name": "pg 2",
+            "content": "테스트 퍼미션",
+            "created_at": "2022-10-17T23:51:03.645799",
+            "updated_at": "2022-10-17T23:51:03.645972"
+        }
+    ]
+}
+```
+
+
+### DELETE /v1/users/{user_id}/roles/{role_id} : 특정 사용자에게 할당된 Role을 삭제한다
+##### Request
+```bash
+curl --location --request DELETE 'http://localhost:9000/v1/users/9/roles/2' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+204 Null
+```
+
+### GET /v1/users/{user_id}/has/role : 특정 사용자에게 Role이 할당되어 있는지 검증한다
+Query parameter에 roles를 배열로 전달한다. 배열로 전달한 role 중에 한 개라도 할당되어 있다면 'true'를 반환한다
+
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/users/9/has/role?roles=role 23&roles=role test' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "result": true
+}
+```
+
+### GET /v1/users/{user_id}/has/permission : 특정 사용자에게 Permission이 할당되어 있는지 검증한다
+Query parameter에 permission을 배열로 전달한다. 배열로 전달한 permission 중에 한 개라도 할당되어 있다면 'true'를 반환한다
+
+permission은 사용자에게 할당된 role에 연결된 permission을 비교한다 
+
+##### Request
+```bash
+curl --location --request GET 'http://localhost:9000/v1/users/9/has/permission?permissions=pg 11&permissions=pg 2' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOiIxNjY2MTA1NDgxIiwiZXhwIjoiMTY2NjE5NTQ4MSIsInN1YiI6IjkiLCJ0eXBlIjoiYWNjZXNzX3Rva2VuIn0.vpI0tL81fbwU07JfbdaDtKFZOEGP6Q_5wXPMAQ270Iw'
+```
+#### Response
+```bash
+{
+    "result": true
+}
+```
+
 
 ## End
 JWT를 간단하게 보고 시작했다가 오히려 많은 부분을 고민하게 되었다. 각 process 별로 정립된 것이 없고 사람마다 구현이 달라 '무엇이 맞는가', '어떻게 구현해야 하는가'에 대한 결정이 어려웠다
@@ -405,3 +878,6 @@ JWT를 간단하게 보고 시작했다가 오히려 많은 부분을 고민하�
  * [https://developers.ringcentral.com/guide/authentication/jwt-flow](https://developers.ringcentral.com/guide/authentication/jwt-flow)
  * [https://towardsdev.com/login-and-registration-workflow-with-jwt-32d492bdfce0](https://towardsdev.com/login-and-registration-workflow-with-jwt-32d492bdfce0)
  * [https://christophergs.com/tutorials/ultimate-fastapi-tutorial-pt-10-auth-jwt/#practical](https://christophergs.com/tutorials/ultimate-fastapi-tutorial-pt-10-auth-jwt/#practical)
+ * [https://grafana.com/docs/grafana/latest/developers/http_api/access_control/](https://grafana.com/docs/grafana/latest/developers/http_api/access_control/)
+ * [https://casbin.org/docs/en/rbac-api#getpermissionsforuser](https://casbin.org/docs/en/rbac-api#getpermissionsforuser)
+ * [https://supertokens.com/blog/user-roles](https://supertokens.com/blog/user-roles)

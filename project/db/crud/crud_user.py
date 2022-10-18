@@ -3,15 +3,20 @@ from datetime import datetime
 
 from sqlalchemy import insert, update, func
 from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.crud.abstract import DalABC
 from models.user import User
-from schemas.user import SignUpBaseSchema
+from schemas.signup import SignUpBaseSchema
 
 
-class UserDAL:
-    def __init__(self, session: AsyncSession):
-        self.session = session
+class UserDAL(DalABC):
+    async def get(self, user_id: int) -> User:
+        q = select(User) \
+            .where(User.id == user_id) \
+            .where(User.is_active == 1)
+
+        result = await self.session.execute(q)
+        return result.scalars().first()
 
     async def get_all_users(self):
         """
