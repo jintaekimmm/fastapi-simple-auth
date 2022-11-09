@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, status, Request
 from fastapi.responses import JSONResponse
@@ -9,6 +9,7 @@ from db.crud.crud_user import UserDAL
 from app.core.auth import authenticate, create_new_jwt_token
 from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception, AuthorizeTokenRefresh
 from dependencies.database import get_session
+from internal.config import settings
 from internal.logging import app_logger
 from schemas.auth import LoginRequestSchema
 from app.core.security.encryption import AESCipher, Hasher
@@ -255,6 +256,15 @@ async def api_token_refresh(*,
 
     # 신규 JWT Token 발급
     new_token = await create_new_jwt_token(sub=token.sub)
+
+    # refreshToken 유효 사간이 'jwt_access_token_expire_minutes' 보다 적게 남은 경우에만 새로운 token을 반환한다
+    # 그렇지 않은 경우에는 새로 생성한 refreshToken을 저장하지 않는다
+    # Think: 리팩토링의 여지가 남았다. refreshToken의 생성 여부를 결정하는게 아니라 일단 생성한 후에 신규 token의 사용 여부를 결정한다
+    # remain_expire_at: timedelta = token_info.expires_at - datetime.now()
+    # if int(remain_expire_at.total_seconds() // 60) > settings.jwt_access_token_expire_minutes:
+    #     new_token.refresh_token = aes.decrypt(token_info.refresh_token)
+    #     new_token.refresh_token_expires_in = str(int(token_info.expires_at.timestamp()))
+
     # refreshToken update schema 생성
     update_token = UpdateTokenSchema(user_id=int(token.sub),
                                      old_access_token=token.access_token,
@@ -305,6 +315,15 @@ async def web_token_refresh(*,
 
     # 신규 JWT Token 발급
     new_token = await create_new_jwt_token(sub=token.sub)
+
+    # refreshToken 유효 사간이 'jwt_access_token_expire_minutes' 보다 적게 남은 경우에만 새로운 token을 반환한다
+    # 그렇지 않은 경우에는 새로 생성한 refreshToken을 저장하지 않는다
+    # Think: 리팩토링의 여지가 남았다. refreshToken의 생성 여부를 결정하는게 아니라 일단 생성한 후에 신규 token의 사용 여부를 결정한다
+    # remain_expire_at: timedelta = token_info.expires_at - datetime.now()
+    # if int(remain_expire_at.total_seconds() // 60) > settings.jwt_access_token_expire_minutes:
+    #     new_token.refresh_token = aes.decrypt(token_info.refresh_token)
+    #     new_token.refresh_token_expires_in = str(int(token_info.expires_at.timestamp()))
+
     # refreshToken update schema 생성
     update_token = UpdateTokenSchema(user_id=int(token.sub),
                                      old_access_token=token.access_token,
