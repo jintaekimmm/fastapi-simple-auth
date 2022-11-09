@@ -337,6 +337,8 @@ accessToken을 갱신할 때에 refreshToken을 어떻게 할 것인가 에 대�
  2) [refresh-tokens-what-are-they-and-when-to-use-them](https://auth0.com/blog/refresh-tokens-what-are-they-and-when-to-use-them/)
    > auth0 블로그를 보면 보안 기술로 accessToken을 갱신 할 때마다 refreshToken을 함께 변경(rotation) 한다는 내용을 담고 있다
 
+ > refreshToken을 일정 시간(accessToken expire time) 미만인 경우에만 재발급을 할까 고민했지만, 결과적으로 넣지 않았다. 발급 기간동안에는 동일한 token을 유지하는게 올바른 것 처럼 보엿으나
+ > rotation으로 인한 강화된 보안성을 감소시켜 얻을 수 있는 이점이 있나 고민이 된다
 ### Refresh Process
 ![Refresh Process](https://user-images.githubusercontent.com/31076511/195276586-50cf0610-8e35-4268-8303-f64e0fb0f7a6.png)
 
