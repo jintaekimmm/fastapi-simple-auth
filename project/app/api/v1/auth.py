@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db.crud.crud_token import RefreshTokenDAL
 from db.crud.crud_user import UserDAL
 from app.core.auth import authenticate, create_new_jwt_token
-from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception, AuthorizeTokenRefresh
+from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception, AuthorizeTokenRefresh, \
+    AuthorizeRefreshCookieUser
 from dependencies.database import get_session
 from internal.config import settings
 from internal.logging import app_logger
@@ -291,7 +292,7 @@ async def api_token_refresh(*,
 
 @router.post('/web/token/refresh')
 async def web_token_refresh(*,
-                            token: TokenUser = Depends(AuthorizeCookieUser()),
+                            token: TokenUser = Depends(AuthorizeRefreshCookieUser()),
                             session: AsyncSession = Depends(get_session)):
     """
     JWT Token Refresh API(Web Version)
