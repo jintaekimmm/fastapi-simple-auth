@@ -43,15 +43,15 @@ class UpdateTokenSchema(BaseModel):
     expires_at: datetime
 
 
-class TokenRefreshRequestSchema(BaseModel):
-    access_token: str
-    refresh_token: str
+class TokenRefreshRequestSchema(TokenSchema):
+    @validator('access_token', 'refresh_token')
+    def require_validator(cls, v):
+        if not v:
+            raise ValueError('value required')
+        return v
 
 
-class CookieTokenSchema(BaseModel):
-    access_token: str
-    refresh_token: str
-
+class CookieTokenSchema(TokenSchema):
     @validator('access_token', 'refresh_token')
     def require_validator(cls, v):
         if not v:
