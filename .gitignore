@@ -108,7 +108,7 @@ celerybeat.pid
 # Environments
 .env
 .env.dev
-project/.env.local
+src/.env.local
 .env.local.sh
 .venv
 env/

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import user, signup, auth, roles, permissions
+from app.api import user, signup, auth, roles, permissions
 
 app = FastAPI()
 app.include_router(user.router)

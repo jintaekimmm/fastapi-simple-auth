@@ -1,6 +1,9 @@
-import json
 import multiprocessing
 import os
+
+PORT=9000
+HOST="0.0.0.0"
+LOG_LEVEL="info"
 
 workers_per_core_str = os.getenv("WORKERS_PER_CORE", "1")
 max_workers_str = os.getenv("MAX_WORKERS")
@@ -9,10 +12,11 @@ if max_workers_str:
     use_max_workers = int(max_workers_str)
 web_concurrency_str = os.getenv("WEB_CONCURRENCY", None)
 
-host = os.getenv("HOST", "0.0.0.0")
-port = os.getenv("PORT", "9000")
+host = os.getenv("HOST", HOST)
+port = os.getenv("PORT", PORT)
 bind_env = os.getenv("BIND", None)
-use_loglevel = os.getenv("LOG_LEVEL", "info")
+use_loglevel = os.getenv("LOG_LEVEL", LOG_LEVEL)
+
 if bind_env:
     use_bind = bind_env
 else:
@@ -28,10 +32,13 @@ else:
     web_concurrency = max(int(default_web_concurrency), 2)
     if use_max_workers:
         web_concurrency = min(web_concurrency, use_max_workers)
+
 accesslog_var = os.getenv("ACCESS_LOG", "-")
 use_accesslog = accesslog_var or None
+
 errorlog_var = os.getenv("ERROR_LOG", "-")
 use_errorlog = errorlog_var or None
+
 graceful_timeout_str = os.getenv("GRACEFUL_TIMEOUT", "120")
 timeout_str = os.getenv("TIMEOUT", "120")
 keepalive_str = os.getenv("KEEP_ALIVE", "5")
@@ -64,4 +71,3 @@ log_data = {
     "host": host,
     "port": port,
 }
-print(json.dumps(log_data))

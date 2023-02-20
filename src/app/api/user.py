@@ -2,6 +2,7 @@ from typing import List, Union
 
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from fastapi.responses import JSONResponse
+from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +13,6 @@ from db.crud.crud_user import UserDAL
 from db.crud.crud_users_roles import UsersRolesDAL
 from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
-from internal.logging import app_logger
 from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema
 from schemas.roles import RoleListResponseSchema, RoleBaseSchema
 from schemas.user import UserAssignedRoleRequestSchema, UserAssignedRoleUpdateSchema, UserRolesSchema
@@ -37,6 +37,7 @@ async def get_user_roles(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         role_list = await role_dal.get_roles_relation_users(user_id=user_id)
@@ -44,7 +45,7 @@ async def get_user_roles(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
@@ -80,6 +81,7 @@ async def get_user_permissions(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         perm_list = await permission_dal.get_roles_relation_users(user_id=user_id)
@@ -87,7 +89,7 @@ async def get_user_permissions(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
@@ -124,19 +126,21 @@ async def user_assigned_role(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         # role이 존재하는지 확인한다
         role_info = await role_dal.get_by_name(role_name=role.role)
         if not role_info:
             msg = role.role
+            logger.info(f"unable to assign role to user. because '{msg}' not found role. { {'user_id': user_id} }")
             raise not_found_param_exception(f"unable to assign role to user. "
                                             f"because '{msg}' not found role")
 
         try:
             await user_role_dal.insert(user_role=UserRolesSchema(user_id=user_id, role_id=role_info.id))
         except IntegrityError as e:
-            app_logger.error(e)
+            logger.exception(e)
             await session.rollback()
             return JSONResponse({"message": f"user has already been assigned role {role.role}"},
                                 status_code=status.HTTP_409_CONFLICT)
@@ -145,11 +149,13 @@ async def user_assigned_role(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
         await session.close()
+
+    logger.info(f'user roles hava been updated. { {"user_id": user_id} }')
 
     return JSONResponse({"message": "user roles have been updated"})
 
@@ -175,6 +181,7 @@ async def update_user_assigned_roles(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         # 요청한 role이 존재하는지 확인한다
@@ -182,6 +189,7 @@ async def update_user_assigned_roles(*,
         not_found_roles = set(roles).difference(set(i.name for i in roles_result))
         if not_found_roles:
             msg = ', '.join(not_found_roles)
+            logger.info(f"can't assigned user. because '{msg}' roles not found. { {'user_id': user_id} }")
             raise not_found_param_exception(f"can't assigned user. "
                                             f"because '{msg} roles not found")
 
@@ -205,7 +213,7 @@ async def update_user_assigned_roles(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     else:
@@ -244,17 +252,19 @@ async def remove_user_assigned_role(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         # user에 role이 할당되어 있는지 확인한다
         if not await user_role_dal.exists_user_relation_role(user_id=user_id, role_id=role_id):
+            logger.info(f'user has no role assgined. { {"user_id": user_id, "role_id": role_id} }')
             return JSONResponse({'message': 'user has no role assigned'}, status_code=status.HTTP_404_NOT_FOUND)
 
         await user_role_dal.delete(user_id=user_id, role_id=role_id)
 
         await session.commit()
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
@@ -279,11 +289,13 @@ async def has_role_for_user(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         # role이 존재하는지 확인한다
         role_result = await role_dal.get_by_names(roles)
         if not role_result:
+            logger.info(f'role not found { {"roles": roles} }')
             raise not_found_param_exception(f"role not found")
 
         # 사용자에게 할당된 role중에 요청 목록과 한개라도 일치하는 것이 있다면 STATUS 200 반환
@@ -294,7 +306,7 @@ async def has_role_for_user(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
@@ -321,11 +333,13 @@ async def has_permission_for_user(*,
         # 사용자가 존재하는지 확인한다
         user_info = await user_dal.get(user_id=user_id)
         if not user_info:
+            logger.info(f'user not found { {"user_id": user_id} }')
             raise not_found_param_exception(f"user not found")
 
         # permission이 존재하는지 확인한다
         perm_result = await perm_dal.get_by_names(permissions)
         if not perm_result:
+            logger.info(f'permission not found { {"permissions": permissions} }')
             raise not_found_param_exception(f"permission not found")
 
         # 사용자에게 할당된 permission중에 요청 목록과 한개라도 일치하는 것이 있다면 STATUS 200 반환
@@ -336,7 +350,7 @@ async def has_permission_for_user(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:

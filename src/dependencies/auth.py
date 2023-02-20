@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from app.core.exception import credentials_exception, token_expired_exception
 from internal.config import settings
-from internal.logging import app_logger
 from schemas.token import TokenUser, CookieTokenSchema, TokenRefreshRequestSchema
 
 
