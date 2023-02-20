@@ -3,16 +3,27 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.responses import CustomJSONResponse
 from app.core.utils.masking import masking
 from db.crud.crud_user import UserDAL
 from dependencies.database import get_session
+from schemas.response import ErrorResponse
 from schemas.signup import SignupRequestSchema, SignUpBaseSchema
 from app.core.security.encryption import AESCipher, Hasher
 
 router = APIRouter(prefix='/v1/signup', tags=['signup'])
 
 
-@router.post('')
+@router.post('',
+             status_code=status.HTTP_201_CREATED,
+             responses={
+                 409: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def signup(*,
                  user_info: SignupRequestSchema,
                  session: AsyncSession = Depends(get_session)):
@@ -65,6 +76,3 @@ async def signup(*,
         await session.close()
 
     logger.info(f'signup success. { {"email": masking(user_info.email, rate=0.5), "first_name": masking(user_info.first_name), "last_name": masking(user_info.last_name)} }')
-
-    return JSONResponse(None,
-                        status_code=201)

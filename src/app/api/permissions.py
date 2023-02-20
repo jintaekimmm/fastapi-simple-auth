@@ -1,24 +1,31 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, status, HTTPException
 from loguru import logger
 from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import not_found_exception, internal_server_exception, delete_denied_exception
+from app.core.responses import CustomJSONResponse
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
 from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
 from schemas.permissions import PermissionListResponseSchema, PermissionBaseSchema, PermissionCreateUpdateRequestSchema
+from schemas.response import ErrorResponse, DefaultResponse
+from schemas.token import TokenUser
 
-router = APIRouter(prefix='/v1/permissions', tags=['permissions'])
+router = APIRouter(prefix='/permissions', tags=['permissions'])
 
 
-@router.get('', response_model=PermissionListResponseSchema)
+@router.get('',
+            response_model=PermissionListResponseSchema,
+            responses={
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def list_permissions(*,
-                           _=Depends(AuthorizeTokenUser()),
+                           _: TokenUser = Depends(AuthorizeTokenUser()),
                            session: AsyncSession = Depends(get_session)):
     """
     All List Permissions API
@@ -40,15 +47,28 @@ async def list_permissions(*,
             for perm in perm_list])
     except Exception as e:
         logger.exception(e)
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return responses
 
 
-@router.post('')
+@router.post('',
+             response_model=DefaultResponse,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 409: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def create_permissions(*,
                              perm_info: PermissionCreateUpdateRequestSchema,
-                             _=Depends(AuthorizeTokenUser()),
+                             _: TokenUser =Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Create Permissions API
@@ -65,21 +85,24 @@ async def create_permissions(*,
         except IntegrityError as e:
             logger.exception(e)
             await session.rollback()
-            return JSONResponse({'message': 'permission already exists'}, status_code=status.HTTP_409_CONFLICT)
+            return CustomJSONResponse(message='permission already exists',
+                                      status_code=status.HTTP_409_CONFLICT)
 
         try:
             perm_id = perm_result.inserted_primary_key[0]
         except IndexError as e:
             logger.exception(e)
             await session.rollback()
-            return JSONResponse({'message': 'permission create failed'}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return CustomJSONResponse(message='permission create failed',
+                                      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         await session.commit()
 
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()
 
@@ -87,13 +110,27 @@ async def create_permissions(*,
     new_resource_uri = router.url_path_for('get_permissions', perm_id=perm_id)
     headers = {'Location': new_resource_uri}
 
-    return JSONResponse(None, status_code=status.HTTP_201_CREATED, headers=headers)
+    return CustomJSONResponse(message=None,
+                              status_code=status.HTTP_201_CREATED,
+                              headers=headers)
 
 
-@router.get('/{perm_id}', response_model=PermissionBaseSchema)
+@router.get('/{perm_id}',
+            response_model=PermissionBaseSchema,
+            responses={
+                401: {
+                    'model': ErrorResponse
+                },
+                404: {
+                    'model': ErrorResponse
+                },
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def get_permissions(*,
                           perm_id: int,
-                          _=Depends(AuthorizeTokenUser()),
+                          _: TokenUser =Depends(AuthorizeTokenUser()),
                           session: AsyncSession = Depends(get_session)):
     """
     Get Permissions API
@@ -108,26 +145,41 @@ async def get_permissions(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         if not perm:
             logger.info(f'permission not found { {"permission_id": perm_id} }')
-            raise not_found_exception
+            return CustomJSONResponse(message='Permission not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
     finally:
         await session.close()
 
-    return PermissionBaseSchema(id=perm.id,
-                                name=perm.name,
-                                content=perm.content,
-                                created_at=perm.created_at,
-                                updated_at=perm.updated_at)
+    response = PermissionBaseSchema(id=perm.id,
+                                    name=perm.name,
+                                    content=perm.content,
+                                    created_at=perm.created_at,
+                                    updated_at=perm.updated_at)
+    return response
 
 
-@router.put('/{perm_id}', response_model=PermissionBaseSchema)
+@router.put('/{perm_id}',
+            response_model=PermissionBaseSchema,
+            responses={
+                401: {
+                    'model': ErrorResponse
+                },
+                404: {
+                    'model': ErrorResponse
+                },
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def update_permissions(*,
                              perm_id: int,
                              perm_info: PermissionCreateUpdateRequestSchema,
-                             _=Depends(AuthorizeTokenUser()),
+                             _: TokenUser =Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Update Permissions API
@@ -145,26 +197,44 @@ async def update_permissions(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         perm = await perm_dal.get(perm_id=perm_id)
         if not perm:
             logger.info(f'permission not found { {"permission_id": perm_id} }')
-            raise not_found_exception
+            return CustomJSONResponse(message='Permission not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
     finally:
         await session.close()
 
-    return PermissionBaseSchema(id=perm.id,
-                                name=perm.name,
-                                content=perm.content,
-                                created_at=perm.created_at,
-                                updated_at=perm.updated_at)
+    response = PermissionBaseSchema(id=perm.id,
+                                    name=perm.name,
+                                    content=perm.content,
+                                    created_at=perm.created_at,
+                                    updated_at=perm.updated_at)
+    return response
 
 
-@router.delete('/{perm_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{perm_id}',
+               status_code=status.HTTP_204_NO_CONTENT,
+               responses={
+                   401: {
+                       'model': ErrorResponse
+                   },
+                   403: {
+                       'model': ErrorResponse
+                   },
+                   404: {
+                       'model': ErrorResponse
+                   },
+                   500: {
+                       'model': ErrorResponse
+                   }
+               })
 async def delete_permissions(*,
                              perm_id: int,
-                             _=Depends(AuthorizeTokenUser()),
+                             _: TokenUser = Depends(AuthorizeTokenUser()),
                              session: AsyncSession = Depends(get_session)):
     """
     Delete Permissions API
@@ -179,7 +249,9 @@ async def delete_permissions(*,
         perm = await perm_dal.get(perm_id=perm_id)
         if not perm:
             logger.info(f'permission not found { {"permission_id": perm_id} }')
-            raise not_found_exception
+            return CustomJSONResponse(message='Permission not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
+
         # Permission과 연결된 Role이 존재하는지 확인한다
         if await role_perm_dal.exists_relation_roles(perm_id=perm_id):
             # Permission 과 연결된 Role의 이름을 가져온다
@@ -187,8 +259,9 @@ async def delete_permissions(*,
             msg = ', '.join(result)
             if msg:
                 logger.info(f"can't delete permission. because '{msg}' currently assigned to this permission")
-                delete_denied_exception(f"can't delete permission. "
-                                        f"because '{msg}' currently assigned to this permission")
+                return CustomJSONResponse(message=f"can't delete permission. "
+                                                  f"because '{msg}' currently assigned to this permission",
+                                          status_code=status.HTTP_403_FORBIDDEN)
 
         await perm_dal.delete(perm_id=perm_id)
 
@@ -198,6 +271,7 @@ async def delete_permissions(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()

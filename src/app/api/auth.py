@@ -1,25 +1,35 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, status, Request
-from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exception import TokenCredentialsException
+from app.core.responses import CustomJSONResponse
 from app.core.utils.masking import masking
 from db.crud.crud_token import RefreshTokenDAL
 from db.crud.crud_user import UserDAL
 from app.core.auth import authenticate, create_new_jwt_token
-from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, credentials_exception, AuthorizeTokenRefresh, \
-    AuthorizeRefreshCookieUser
+from dependencies.auth import AuthorizeCookieUser, AuthorizeTokenUser, AuthorizeTokenRefresh, AuthorizeRefreshCookieUser
 from dependencies.database import get_session
 from schemas.auth import LoginRequestSchema
 from app.core.security.encryption import AESCipher, Hasher
+from schemas.response import ErrorResponse, DefaultResponse
 from schemas.token import CreateTokenSchema, InsertTokenSchema, TokenUser, UpdateTokenSchema, TokenSchema
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
-@router.post('/api/login', response_model=CreateTokenSchema)
+@router.post('/api/login',
+             response_model=CreateTokenSchema,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def api_login(*,
                     request: Request,
                     login_info: LoginRequestSchema,
@@ -51,8 +61,8 @@ async def api_login(*,
     is_login = await authenticate(user, login_info.password)
     if not is_login:
         logger.info(f'incorrect username or password. { {"email": masking(login_info.email, rate=0.5)} }')
-        return JSONResponse({'message': 'Incorrect username or password.'},
-                            status_code=status.HTTP_401_UNAUTHORIZED)
+        return CustomJSONResponse(message='Incorrect username or password',
+                                  status_code=status.HTTP_401_UNAUTHORIZED)
 
     # JWT Token 발급
     token = await create_new_jwt_token(sub=str(user.id))
@@ -74,8 +84,8 @@ async def api_login(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Failed to select/insert data'},
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return CustomJSONResponse(message='Failed to select/insert data',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()
 
@@ -84,7 +94,16 @@ async def api_login(*,
     return token
 
 
-@router.post('/web/login')
+@router.post('/web/login',
+             response_model=DefaultResponse,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def web_login(*,
                     request: Request,
                     login_info: LoginRequestSchema,
@@ -116,8 +135,8 @@ async def web_login(*,
     is_login = await authenticate(user, login_info.password)
     if not is_login:
         logger.info(f'incorrect username or password. { {"username": masking(login_info.email, rate=0.5)} }')
-        return JSONResponse({'message': 'Incorrect username or password.'},
-                            status_code=status.HTTP_401_UNAUTHORIZED)
+        return CustomJSONResponse(message='Incorrect username or password',
+                                  status_code=status.HTTP_401_UNAUTHORIZED)
 
     # JWT Token 발급
     token = await create_new_jwt_token(sub=str(user.id))
@@ -139,12 +158,12 @@ async def web_login(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Failed to select/insert data'},
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return CustomJSONResponse(message='Failed to select/insert data',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()
 
-    response = JSONResponse({'message': 'login success'})
+    response = CustomJSONResponse(message='success')
     response.set_cookie(key='access_token', value=f'{token.access_token}', httponly=True, secure=True)
     response.set_cookie(key='refresh_token', value=f'{token.refresh_token}', httponly=True, secure=True)
 
@@ -153,7 +172,16 @@ async def web_login(*,
     return response
 
 
-@router.post('/api/logout')
+@router.post('/api/logout',
+             response_model=DefaultResponse,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 404: {
+                     'model': ErrorResponse
+                 }
+             })
 async def api_logout(*,
                      token: TokenUser = Depends(AuthorizeTokenUser()),
                      session: AsyncSession = Depends(get_session)):
@@ -176,25 +204,30 @@ async def api_logout(*,
             await session.commit()
         else:
             raise Exception('user token not found')
-    except ValueError as e:
-        logger.exception(e)
-        await session.rollback()
-        return JSONResponse({'message': str(e)},
-                            status_code=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Invalid Refresh Token'},
-                            status_code=status.HTTP_404_NOT_FOUND)
+        return CustomJSONResponse(message='Invalid Refresh Token',
+                                  status_code=status.HTTP_404_NOT_FOUND)
     finally:
         await session.close()
 
     logger.info(f'user logout. { {"user_id": int(token.sub)} }')
 
-    return JSONResponse({'message': 'logout success'})
+    return CustomJSONResponse(message='success')
 
 
-@router.post('/web/logout')
+@router.post('/web/logout',
+             response_model=DefaultResponse,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 404: {
+                     'model': ErrorResponse
+                 }
+             })
 async def web_logout(*,
                      token: TokenUser = Depends(AuthorizeCookieUser()),
                      session: AsyncSession = Depends(get_session)):
@@ -218,20 +251,15 @@ async def web_logout(*,
             await session.commit()
         else:
             raise ValueError('user token not found')
-    except ValueError as e:
-        logger.exception(e)
-        await session.rollback()
-        return JSONResponse({'message': str(e)},
-                            status_code=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Token Expired fail'},
-                            status_code=status.HTTP_404_NOT_FOUND)
+        return CustomJSONResponse(message='Invalid Refresh Token',
+                                  status_code=status.HTTP_404_NOT_FOUND)
     else:
         # Cookie에 accessToken과 refreshToken을 삭제한다
-        response = JSONResponse({'message': 'logout success'})
+        response = CustomJSONResponse(message='success')
         response.set_cookie(key='access_token', value='', httponly=True, max_age=0)
         response.set_cookie(key='refresh_token', value='', httponly=True, max_age=0)
 
@@ -243,7 +271,16 @@ async def web_logout(*,
 
 
 
-@router.post('/api/token/refresh', response_model=TokenSchema)
+@router.post('/api/token/refresh',
+             response_model=TokenSchema,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def api_token_refresh(*,
                             token: TokenUser = Depends(AuthorizeTokenRefresh()),
                             session: AsyncSession = Depends(get_session)):
@@ -267,7 +304,7 @@ async def api_token_refresh(*,
 
     if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
         logger.info(f'mismatch refresh token { {"user_id": int(token.sub)} }')
-        raise credentials_exception
+        raise TokenCredentialsException()
 
     # 신규 JWT Token 발급
     new_token = await create_new_jwt_token(sub=token.sub)
@@ -295,8 +332,8 @@ async def api_token_refresh(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Token Update failed'},
-                            status_code=status.HTTP_404_NOT_FOUND)
+        return CustomJSONResponse(message='Token update failed',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()
 
@@ -304,7 +341,16 @@ async def api_token_refresh(*,
                        refresh_token=new_token.refresh_token)
 
 
-@router.post('/web/token/refresh')
+@router.post('/web/token/refresh',
+             response_model=DefaultResponse,
+             responses={
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def web_token_refresh(*,
                             token: TokenUser = Depends(AuthorizeRefreshCookieUser()),
                             session: AsyncSession = Depends(get_session)):
@@ -327,7 +373,7 @@ async def web_token_refresh(*,
     token_info = await token_dal.get(user_id=int(token.sub), access_token=token.access_token)
     if not token_info or token.refresh_token != aes.decrypt(token_info.refresh_token):
         logger.info(f'mismatch refresh token { {"user_id": int(token.sub)} }')
-        raise credentials_exception
+        raise TokenCredentialsException()
 
     # 신규 JWT Token 발급
     new_token = await create_new_jwt_token(sub=token.sub)
@@ -355,15 +401,14 @@ async def web_token_refresh(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        return JSONResponse({'message': 'Token Update failed'},
-                            status_code=status.HTTP_404_NOT_FOUND)
+        return CustomJSONResponse(message='Token update failed',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         # Cookie에 accessToken을 업데이트한다
-        response = JSONResponse({'message': 'refresh success'})
+        response = CustomJSONResponse(message='success')
         response.set_cookie(key='access_token', value=f'{new_token.access_token}', httponly=True)
         response.set_cookie(key='refresh_token', value=f'{new_token.refresh_token}', httponly=True)
 
         return response
     finally:
         await session.close()
-
