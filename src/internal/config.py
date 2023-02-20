@@ -11,6 +11,7 @@ BASE_DIR = pathlib.Path(__file__).parent.parent
 
 class Settings(BaseSettings):
     env: str = os.environ.get('ENV', 'production')
+    log_level: str = os.environ.get('LOG_LEVEL', 'INFO')
 
     ####################
     # Database info

@@ -1,27 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from loguru import logger
 from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exception import internal_server_exception, bad_request_param_exception, not_found_exception, \
-    delete_denied_exception
+from app.core.responses import CustomJSONResponse
 from db.crud.crud_permissions import PermissionsDAL
 from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
 from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
 from schemas.permissions import PermissionBaseSchema
+from schemas.response import ErrorResponse, DefaultResponse
 from schemas.roles import RoleBaseSchema, RoleListResponseSchema, RoleCreateUpdateRequestSchema, RolePermissionSchema, \
     RolesAndPermissionResponseSchema
+from schemas.token import TokenUser
 
-router = APIRouter(prefix='/v1/roles', tags=['roles'])
+router = APIRouter(prefix='/roles', tags=['roles'])
 
 
-@router.get('')
+@router.get('',
+            response_model=RoleListResponseSchema,
+            responses={
+                401: {
+                    'model': ErrorResponse
+                },
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def list_roles(*,
-                     _=Depends(AuthorizeTokenUser()),
+                     _: TokenUser =Depends(AuthorizeTokenUser()),
                      session: AsyncSession = Depends(get_session)):
     """
     All List Roles API
@@ -45,15 +55,31 @@ async def list_roles(*,
         ])
     except Exception as e:
         logger.exception(e)
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return responses
 
 
-@router.post('')
+@router.post('',
+             response_model=DefaultResponse,
+             responses={
+                 400: {
+                     'model': ErrorResponse
+                 },
+                 401: {
+                     'model': ErrorResponse
+                 },
+                 409: {
+                     'model': ErrorResponse
+                 },
+                 500: {
+                     'model': ErrorResponse
+                 }
+             })
 async def create_roles(*,
                        role_info: RoleCreateUpdateRequestSchema,
-                       _=Depends(AuthorizeTokenUser()),
+                       _: TokenUser = Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Create Roles API
@@ -76,8 +102,9 @@ async def create_roles(*,
         if not_found_perm:
             msg = ', '.join(not_found_perm)
             logger.info(f"can't create roles. because '{msg}' not found permissions { {'role_name': role_info.name} }")
-            raise bad_request_param_exception(f"can't create roles. "
-                                              f"because '{msg}' not found permissions")
+            return CustomJSONResponse(message=f"can't create roles. "
+                                              f"because '{msg}' not found permissions",
+                                      status_code=status.HTTP_400_BAD_REQUEST)
 
         # Insert role
         try:
@@ -106,7 +133,8 @@ async def create_roles(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()
 
@@ -114,13 +142,27 @@ async def create_roles(*,
     new_resource_uri = router.url_path_for('get_roles', role_id=role_id)
     headers = {'Location': new_resource_uri}
 
-    return JSONResponse(None, status_code=status.HTTP_201_CREATED, headers=headers)
+    return CustomJSONResponse(message=None,
+                              status_code=status.HTTP_201_CREATED,
+                              headers=headers)
 
 
-@router.get('/{role_id}', response_model=RolesAndPermissionResponseSchema)
+@router.get('/{role_id}',
+            response_model=RolesAndPermissionResponseSchema,
+            responses={
+                401: {
+                    'model': ErrorResponse
+                },
+                404: {
+                    'model': ErrorResponse
+                },
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def get_roles(*,
                     role_id: int,
-                    _=Depends(AuthorizeTokenUser()),
+                    _: TokenUser = Depends(AuthorizeTokenUser()),
                     session: AsyncSession = Depends(get_session)):
     """
     Get Roles API
@@ -136,33 +178,52 @@ async def get_roles(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         if not role:
             logger.info(f'role not found. { {"role_id": role_id} }')
-            raise not_found_exception
+            return CustomJSONResponse(message='Role not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
     finally:
         await session.close()
 
-    return RolesAndPermissionResponseSchema(
-        id=role.id,
-        name=role.name,
-        content=role.content,
-        created_at=role.created_at,
-        updated_at=role.updated_at,
-        permissions=[PermissionBaseSchema(name=perm.name,
-                                          content=perm.content,
-                                          created_at=perm.created_at,
-                                          updated_at=perm.updated_at)
-                     for perm in perms]
-    )
+    response = RolesAndPermissionResponseSchema(id=role.id,
+                                                name=role.name,
+                                                content=role.content,
+                                                created_at=role.created_at,
+                                                updated_at=role.updated_at,
+                                                permissions=[PermissionBaseSchema(name=perm.name,
+                                                                                  content=perm.content,
+                                                                                  created_at=perm.created_at,
+                                                                                  updated_at=perm.updated_at)
+                                                             for perm in perms])
 
+    return response
 
-@router.put('/{role_id}')
+@router.put('/{role_id}',
+            response_model=RolesAndPermissionResponseSchema,
+            responses={
+                400: {
+                    'model': ErrorResponse
+                },
+                401: {
+                    'model': ErrorResponse
+                },
+                404: {
+                    'model': ErrorResponse
+                },
+                409: {
+                    'model': ErrorResponse
+                },
+                500: {
+                    'model': ErrorResponse
+                }
+            })
 async def update_roles(*,
                        role_id: int,
                        role_info: RoleCreateUpdateRequestSchema,
-                       _=Depends(AuthorizeTokenUser()),
+                       _: TokenUser = Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Update Roles API
@@ -185,8 +246,9 @@ async def update_roles(*,
         if not_found_perm:
             msg = ', '.join(not_found_perm)
             logger.info(f"can't create roles. because '{msg}' not found permissions. { {'role_id': role_id, 'role_name': role_info.name} }")
-            raise bad_request_param_exception(f"can't create roles. "
-                                              f"because '{msg}' not found permissions")
+            return CustomJSONResponse(message=f"can't create roles. "
+                                              f"because '{msg}' not found permissions",
+                                      status_code=status.HTTP_400_BAD_REQUEST)
 
         role_perm_list = await perm_dal.get_permissions_relation_roles(role_id=role_id)
 
@@ -214,33 +276,51 @@ async def update_roles(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         role = await role_dal.get(role_id=role_id)
         if not role:
-            raise not_found_exception
+            return CustomJSONResponse('Role not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
         perms = await perm_dal.get_permissions_relation_roles(role_id=role_id)
     finally:
         await session.close()
 
-    return RolesAndPermissionResponseSchema(
-        id=role.id,
-        name=role.name,
-        content=role.content,
-        created_at=role.created_at,
-        updated_at=role.updated_at,
-        permissions=[PermissionBaseSchema(name=perm.name,
-                                          content=perm.content,
-                                          created_at=perm.created_at,
-                                          updated_at=perm.updated_at)
-                     for perm in perms]
-    )
+    response = RolesAndPermissionResponseSchema(id=role.id,
+                                                name=role.name,
+                                                content=role.content,
+                                                created_at=role.created_at,
+                                                updated_at=role.updated_at,
+                                                permissions=[PermissionBaseSchema(name=perm.name,
+                                                                                  content=perm.content,
+                                                                                  created_at=perm.created_at,
+                                                                                  updated_at=perm.updated_at)
+                                                             for perm in perms]
+                                                )
+
+    return response
 
 
-@router.delete('/{role_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{role_id}',
+               status_code=status.HTTP_204_NO_CONTENT,
+               responses={
+                   401: {
+                       'model': ErrorResponse
+                   },
+                   403: {
+                       'model': ErrorResponse
+                   },
+                   404: {
+                       'model': ErrorResponse
+                   },
+                   500: {
+                       'model': ErrorResponse
+                   }
+               })
 async def delete_roles(*,
                        role_id: int,
-                       _=Depends(AuthorizeTokenUser()),
+                       _: TokenUser = Depends(AuthorizeTokenUser()),
                        session: AsyncSession = Depends(get_session)):
     """
     Delete Roles API
@@ -254,7 +334,8 @@ async def delete_roles(*,
     try:
         role = await role_dal.get(role_id=role_id)
         if not role:
-            raise not_found_exception
+            return CustomJSONResponse(message='Role not found',
+                                      status_code=status.HTTP_404_NOT_FOUND)
         # Role과 연결된 Permission이 존재하는지 확인한다
         if await role_perm_dal.exists_relation_permissions(role_id=role_id):
             # Role과 연결된 Permission의 이름을 가져온다
@@ -262,8 +343,9 @@ async def delete_roles(*,
             msg = ', '.join([i.name for i in result])
             if msg:
                 logger.info(f"can't delete role. because '{msg}' currently assigned to this role. { {'role_id': role_id} }")
-                delete_denied_exception(f"can't delete role. "
-                                        f"because '{msg}' currently assigned to this role")
+                return CustomJSONResponse(message=f"can't delete role. "
+                                                  f"because '{msg}' currently assigned to this role",
+                                          status_code=status.HTTP_403_FORBIDDEN)
 
         await role_dal.delete(role_id=role_id)
 
@@ -274,6 +356,7 @@ async def delete_roles(*,
     except Exception as e:
         logger.exception(e)
         await session.rollback()
-        raise internal_server_exception
+        return CustomJSONResponse(message='Internal Server Error',
+                                  status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     finally:
         await session.close()

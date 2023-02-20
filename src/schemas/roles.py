@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, validator
 
 from schemas.permissions import PermissionNameSchema, PermissionBaseSchema
+from schemas.response import DefaultResponse
 
 
 class RoleBaseSchema(BaseModel):
@@ -72,3 +73,18 @@ class RolesAndPermissionResponseSchema(RoleBaseSchema):
                 'exclude': True
             }
         }
+
+
+class UserHasRoleSchema(BaseModel):
+    result: bool
+
+class UserHashRoleResponseSchema(DefaultResponse):
+    data: UserHasRoleSchema
+
+
+class UserHasPermissionSchema(BaseModel):
+    result: bool
+
+
+class UserHasPermissionResponseSchema(DefaultResponse):
+    data: UserHasPermissionSchema

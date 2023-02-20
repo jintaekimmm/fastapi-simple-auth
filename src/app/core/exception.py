@@ -1,45 +1,8 @@
-from fastapi import HTTPException, status
-
-# Exception 4xx
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Invalid Token"
-)
-
-token_expired_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Token Expired"
-)
-
-not_found_exception = HTTPException(
-    status_code=status.HTTP_404_NOT_FOUND,
-    detail='Not Found'
-)
+class TokenCredentialsException(Exception):
+    def __init__(self, message: str = 'Invalid Token'):
+        self.message = message
 
 
-def not_found_param_exception(msg: str):
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=msg
-    )
-
-
-def bad_request_param_exception(msg: str):
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=msg
-    )
-
-
-def delete_denied_exception(msg: str):
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail=msg
-    )
-
-
-# Exception 5xx
-internal_server_exception = HTTPException(
-    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    detail='Internal Server Error'
-)
+class TokenExpiredException(Exception):
+    def __init__(self, message: str = 'Token Expired'):
+        self.message = message

@@ -1,32 +1,8 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from app.factory import create_app
+from internal.logging import configure_logger
 
-from app.api import user, signup, auth, roles, permissions
+# Logging Settings
+configure_logger()
 
-app = FastAPI()
-app.include_router(user.router)
-app.include_router(signup.router)
-app.include_router(auth.router)
-app.include_router(roles.router)
-app.include_router(permissions.router)
-
-
-@app.get("/")
-async def root():
-    return {"message": "i'm alive"}
-
-origins = ['*']
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get('/health')
-async def health():
-    return JSONResponse(content={'status': 'ok'})
+# Create FastAPI
+app = create_app()
