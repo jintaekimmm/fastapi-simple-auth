@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import JSONResponse
+from loguru import logger
 from slugify import slugify
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +12,6 @@ from db.crud.crud_roles import RolesDAL
 from db.crud.crud_roles_permissions import RolesPermissionsDAL
 from dependencies.auth import AuthorizeTokenUser
 from dependencies.database import get_session
-from internal.logging import app_logger
 from schemas.permissions import PermissionBaseSchema
 from schemas.roles import RoleBaseSchema, RoleListResponseSchema, RoleCreateUpdateRequestSchema, RolePermissionSchema, \
     RolesAndPermissionResponseSchema
@@ -44,7 +44,7 @@ async def list_roles(*,
             for role in role_list
         ])
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         raise internal_server_exception
 
     return responses
@@ -75,20 +75,23 @@ async def create_roles(*,
         not_found_perm = set(permissions).difference(set(i.name for i in perm_result))
         if not_found_perm:
             msg = ', '.join(not_found_perm)
+            logger.info(f"can't create roles. because '{msg}' not found permissions { {'role_name': role_info.name} }")
             raise bad_request_param_exception(f"can't create roles. "
                                               f"because '{msg}' not found permissions")
 
         # Insert role
         try:
             role_result = await role_dal.insert(role=role_info)
-        except IntegrityError:
+        except IntegrityError as e:
+            logger.exception(e)
             await session.rollback()
             return JSONResponse({'message': 'role already exists'}, status_code=status.HTTP_409_CONFLICT)
 
         # 생성한 Role Id를 가져온다
         try:
             role_id = role_result.inserted_primary_key[0]
-        except IndexError:
+        except IndexError as e:
+            logger.exception(e)
             await session.rollback()
             return JSONResponse({'message': 'role create failed'}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -101,7 +104,7 @@ async def create_roles(*,
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
@@ -110,6 +113,7 @@ async def create_roles(*,
     # Add Location Header
     new_resource_uri = router.url_path_for('get_roles', role_id=role_id)
     headers = {'Location': new_resource_uri}
+
     return JSONResponse(None, status_code=status.HTTP_201_CREATED, headers=headers)
 
 
@@ -130,11 +134,12 @@ async def get_roles(*,
         role = await role_dal.get(role_id=role_id)
         perms = await perm_dal.get_permissions_relation_roles(role_id=role_id)
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     else:
         if not role:
+            logger.info(f'role not found. { {"role_id": role_id} }')
             raise not_found_exception
     finally:
         await session.close()
@@ -179,6 +184,7 @@ async def update_roles(*,
         not_found_perm = set(permissions).difference(set(i.name for i in perm_result))
         if not_found_perm:
             msg = ', '.join(not_found_perm)
+            logger.info(f"can't create roles. because '{msg}' not found permissions. { {'role_id': role_id, 'role_name': role_info.name} }")
             raise bad_request_param_exception(f"can't create roles. "
                                               f"because '{msg}' not found permissions")
 
@@ -200,13 +206,13 @@ async def update_roles(*,
 
         await session.commit()
     except IntegrityError as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         return JSONResponse({"message": f"role '{role_info.name}' is already exists"},
                             status_code=status.HTTP_409_CONFLICT)
 
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     else:
@@ -255,16 +261,18 @@ async def delete_roles(*,
             result = await perm_dal.get_permissions_relation_roles(role_id=role_id)
             msg = ', '.join([i.name for i in result])
             if msg:
+                logger.info(f"can't delete role. because '{msg}' currently assigned to this role. { {'role_id': role_id} }")
                 delete_denied_exception(f"can't delete role. "
                                         f"because '{msg}' currently assigned to this role")
 
         await role_dal.delete(role_id=role_id)
 
         await session.commit()
+
     except HTTPException as e:
         raise e
     except Exception as e:
-        app_logger.error(e)
+        logger.exception(e)
         await session.rollback()
         raise internal_server_exception
     finally:
