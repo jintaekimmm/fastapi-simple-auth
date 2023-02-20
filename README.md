@@ -1,11 +1,11 @@
-# Simple Auth JWT
+# Fastapi-Simple-Auth
 
-JWT를 사용하여 간단한 인증 서버를 구현해본다
+FastAPI로 구현한 단순 인증 API
 
 ## Introduce
 기존의 작성된 많은 글과 질문/답변을 보고 구현하였습니다. 일부 구현은 여러 선택 사항 중에 주관적인 생각으로 맞다고 하는 것을 기준으로 선택하였습니다
 
-화면(Front-end)에서 어떻게 사용할 지에 대해서는 완벽히 고려된 것이 아니므로 실제 사용성과 관련해서는 괴리감이 있을 수 있습니다. 
+화면(Front-end)에서 어떻게 사용할 지에 대해서는 완벽히 고려된 것이 아니므로 실제 사용성과 관련해서는 맞지 않을 수 있습니다. 
 
 ### .env example
 ```bash
@@ -32,67 +32,73 @@ DB_PASSWORD=
 
 ```bash
 .
-├── README.md
-├── project
-│   ├── app
-│   │   ├── __init__.py
-│   │   ├── api
-│   │   │   ├── __init__.py
-│   │   │   └── v1
-│   │   │       ├── __init__.py
-│   │   │       ├── auth.py
-│   │   │       ├── permissions.py
-│   │   │       ├── roles.py
-│   │   │       ├── signup.py
-│   │   │       └── user.py
-│   │   ├── core
-│   │   │   ├── __init__.py
-│   │   │   ├── auth.py
-│   │   │   ├── exception.py
-│   │   │   └── security
-│   │   │       ├── __init__.py
-│   │   │       └── encryption.py
-│   │   └── main.py
-│   ├── db
-│   │   ├── __init__.py
-│   │   ├── base.py
-│   │   └── crud
-│   │       ├── __init__.py
-│   │       ├── abstract.py
-│   │       ├── crud_permissions.py
-│   │       ├── crud_roles.py
-│   │       ├── crud_roles_permissions.py
-│   │       ├── crud_token.py
-│   │       ├── crud_user.py
-│   │       └── crud_users_roles.py
-│   ├── dependencies
-│   │   ├── __init__.py
-│   │   ├── auth.py
-│   │   └── database.py
-│   ├── gunicorn_conf.py
-│   ├── internal
-│   │   ├── __init__.py
-│   │   ├── config.py
-│   │   └── logging.py
-│   ├── logs
-│   ├── models
-│   │   ├── __init__.py
-│   │   ├── groups.py
-│   │   ├── mixin.py
-│   │   ├── permissions.py
-│   │   ├── roles.py
-│   │   ├── token.py
-│   │   ├── user.py
-│   │   └── user_groups.py
-│   └── schemas
-│       ├── __init__.py
-│       ├── auth.py
-│       ├── permissions.py
-│       ├── roles.py
-│       ├── signup.py
-│       ├── token.py
-│       └── user.py
-└── requirements.txt
+|-- ./docs
+|-- ./src
+|   |-- ./src/db
+|   |   |-- ./src/db/__init__.py
+|   |   |-- ./src/db/base.py
+|   |   |-- ./src/db/crud
+|   |   |   |-- ./src/db/crud/__init__.py
+|   |   |   |-- ./src/db/crud/abstract.py
+|   |   |   |-- ./src/db/crud/crud_permissions.py
+|   |   |   |-- ./src/db/crud/crud_roles.py
+|   |   |   |-- ./src/db/crud/crud_roles_permissions.py
+|   |   |   |-- ./src/db/crud/crud_token.py
+|   |   |   |-- ./src/db/crud/crud_user.py
+|   |   |   |-- ./src/db/crud/crud_users_roles.py
+|   |-- ./src/models
+|   |   |-- ./src/models/__init__.py
+|   |   |-- ./src/models/mixin.py
+|   |   |-- ./src/models/groups.py
+|   |   |-- ./src/models/user_groups.py
+|   |   |-- ./src/models/token.py
+|   |   |-- ./src/models/permissions.py
+|   |   |-- ./src/models/roles.py
+|   |   |-- ./src/models/user.py
+|   |-- ./src/gunicorn_conf.py
+|   |-- ./src/app
+|   |   |-- ./src/app/__init__.py
+|   |   |-- ./src/app/factory.py
+|   |   |-- ./src/app/main.py
+|   |   |-- ./src/app/core
+|   |   |   |-- ./src/app/core/__init__.py
+|   |   |   |-- ./src/app/core/security
+|   |   |   |   |-- ./src/app/core/security/__init__.py
+|   |   |   |   |-- ./src/app/core/security/encryption.py
+|   |   |   |-- ./src/app/core/auth.py
+|   |   |   |-- ./src/app/core/utils
+|   |   |   |   |-- ./src/app/core/utils/__init__.py
+|   |   |   |   |-- ./src/app/core/utils/masking.py
+|   |   |   |-- ./src/app/core/responses.py
+|   |   |   |-- ./src/app/core/exception.py
+|   |   `-- ./src/app/api
+|   |       |-- ./src/app/api/__init__.py
+|   |       |-- ./src/app/api/signup.py
+|   |       |-- ./src/app/api/auth.py
+|   |       |-- ./src/app/api/roles.py
+|   |       |-- ./src/app/api/user.py
+|   |       |-- ./src/app/api/permissions.py
+|   |-- ./src/internal
+|   |   |-- ./src/internal/__init__.py
+|   |   |-- ./src/internal/logging.py
+|   |   |-- ./src/internal/config.py
+|   |-- ./src/logs
+|   |   `-- ./src/logs/apps_2023-02-20.log
+|   |-- ./src/dependencies
+|   |   |-- ./src/dependencies/__init__.py
+|   |   |-- ./src/dependencies/database.py
+|   |   |-- ./src/dependencies/auth.py
+|   `-- ./src/schemas
+|       |-- ./src/schemas/__init__.py
+|       |-- ./src/schemas/auth.py
+|       |-- ./src/schemas/permissions.py
+|       |-- ./src/schemas/signup.py
+|       |-- ./src/schemas/token.py
+|       |-- ./src/schemas/user.py
+|       |-- ./src/schemas/response.py
+|       |-- ./src/schemas/roles.py
+|-- ./requirements.txt
+`-- ./README.md
 ```
 
 # Auth
@@ -104,7 +110,7 @@ DB_PASSWORD=
  * 토큰 갱신(JWT Token Refresh)
 
 ## API Endpoints
-![API Endpoint](https://user-images.githubusercontent.com/31076511/196459270-39434a44-963c-4718-ad25-d49ec6dee42f.png)
+![API Endpoint](https://user-images.githubusercontent.com/31076511/220062435-b4b3af06-ed7d-47e5-8784-ffbe44ae5364.png)
 
 ## Database
 
@@ -862,14 +868,16 @@ curl --location --request GET 'http://localhost:9000/v1/users/9/has/permission?p
 ```
 
 
-## End
-JWT를 간단하게 보고 시작했다가 오히려 많은 부분을 고민하게 되었다. 각 process 별로 정립된 것이 없고 사람마다 구현이 달라 '무엇이 맞는가', '어떻게 구현해야 하는가'에 대한 결정이 어려웠다
+## TODO
 
-여러 질문과 답변, 글을 보면서도 한편으로는 어느 정도 타협을 하고 간단하게 구현을 할까도 했지만 보안과 관련해서는 타협을 하면 안되겠다는 생각을 하고
+- [ ] README.md 분리(docs/api.md, docs/db_schema.md..)
 
-내가 인증 서버를 구현해서 쓴다면 이정도는 해야 겠다는 생각을 했다. 
+- [ ] Response format 리팩토링
 
-당장은 수정하거나 추가되는 것이 많지 않겠지만, Oauth 2.0을 보고난 이후에 다시 한번 정리를 해보려고 한다
+- [ ] TestCase 작성
+
+- [ ] Google OAuth 연동 
+
 
 ## Reference
  * [https://medium.com/@joshuakelly/blind-indexes-in-3-minutes-making-encrypted-personal-data-searchable-b26bce99ce7c](https://medium.com/@joshuakelly/blind-indexes-in-3-minutes-making-encrypted-personal-data-searchable-b26bce99ce7c)
