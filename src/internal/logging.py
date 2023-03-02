@@ -7,7 +7,7 @@ from gunicorn.glogging import Logger
 from internal.config import settings
 
 LOG_LEVEL = logging.getLevelName(settings.log_level)
-LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:SSS} {level} {name}:{function}:{line} {message}"
+LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss.SSS} {level} {name}:{function}:{line} {message}"
 
 
 class InterceptHandler(logging.Handler):
