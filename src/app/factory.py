@@ -1,18 +1,22 @@
 import os
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, status, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
-from app.api import user, signup, auth, roles, permissions
-from app.core.exception import TokenCredentialsException, TokenExpiredException
-from app.core.responses import CustomJSONResponse
+from core.exceptions import TokenCredentialsException, TokenExpiredException
+from core.responses import DefaultJSONResponse, ErrorJSONResponse
+from app.api.v1 import auth, token
 
 
 def create_app() -> FastAPI:
-    """ FastAPI App Factory """
+    # Environment에 따른 설정 적용
     env = os.environ.get('ENV', 'production')
 
     if env == 'production':
+        # Swagger Docs
         openapi_url = None
     else:
         openapi_url = "/openapi.json"
@@ -20,64 +24,80 @@ def create_app() -> FastAPI:
     app = FastAPI(openapi_url=openapi_url,
                   swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 
-    # set routes
     initial_route(app)
-    # set middlewares
     initial_middlewares(app)
-    # set custom exception handlers
+    default_routes(app)
     custom_exception(app)
-    # set event handlers
-    event_handler(app)
 
     return app
 
 
 def initial_route(app: FastAPI) -> None:
-    """ Routes initializing """
+    """Routes Initializing"""
 
-    app.include_router(auth.router)
-    app.include_router(signup.router)
-    app.include_router(user.router)
-    app.include_router(roles.router)
-    app.include_router(permissions.router)
+    app.include_router(router=auth.router, prefix='/v1')
+    app.include_router(router=token.router, prefix='/v1')
 
 
 def initial_middlewares(app: FastAPI) -> None:
-    """ Middlewares initializing """
-    origins = ['*']
+    """Middleware Initializing"""
+
+    origins = ["*"]
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=['*'],
+        allow_headers=['*'],
+        expose_headers=['Content-Disposition']
     )
 
 
+def default_routes(app: FastAPI) -> None:
+    """Default Routes"""
+
+    @app.get('/')
+    async def root():
+        return DefaultJSONResponse(message='ok',
+                                   success=True)
+
+    @app.get('/health')
+    async def health_check():
+        return DefaultJSONResponse(message='ok',
+                                   success=True)
+
+
 def custom_exception(app: FastAPI) -> None:
-    """ Custom Exception Handlers """
+    """
+    Set Custom Exception Handlers
+
+    Token Exception에 대한 JSON Response handler
+    """
 
     @app.exception_handler(TokenCredentialsException)
     async def token_credentials_exception_handlers(request: Request, exc: TokenCredentialsException):
-        return CustomJSONResponse(message=exc.message,
-                                  status_code=status.HTTP_401_UNAUTHORIZED,
-                                  headers={'WWW-Authenticate': 'Bearer'})
+        return ErrorJSONResponse(message=exc.message,
+                                 status_code=status.HTTP_401_UNAUTHORIZED,
+                                 error_code=1401,
+                                 headers={'WWW-Authenticate': 'Bearer'})
 
     @app.exception_handler(TokenExpiredException)
     async def token_expired_exception_handler(request: Request, exc: TokenExpiredException):
-        return CustomJSONResponse(message=exc.message,
-                                  status_code=status.HTTP_401_UNAUTHORIZED,
-                                  headers={'WWW-Authenticate': 'Bearer'})
+        return ErrorJSONResponse(message=exc.message,
+                                 status_code=status.HTTP_401_UNAUTHORIZED,
+                                 error_code=1401,
+                                 headers={'WWW-Authenticate': 'Bearer'})
 
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        """
+        RequestValidation Handler
 
-def event_handler(app: FastAPI) -> None:
-    """ Event Handlers """
+        HTTP Status 422(UNPROCESSABLE_ENTITY)의 error logging을 위한 exception handler이다
+        error response만 logging하고 원래 형식으로 결과를 반환한다
 
-    @app.on_event('startup')
-    async def startup():
-        pass
-
-    @app.on_event('shutdown')
-    async def shutdown():
-        pass
-
+        log: 2023-06-20 22:07:895 ERROR app.factory:validation_exception_handler:147 validation error: [{'loc': ('body',), 'msg': 'field required', 'type': 'value_error.missing'}]
+        """
+        logger.error(f"validation error: {exc.errors()}")
+        return JSONResponse(content={'detail': exc.errors()}, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)

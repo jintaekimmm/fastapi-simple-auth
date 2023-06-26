@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, SmallInteger, DateTime, String, BINARY, UniqueConstraint
+from sqlalchemy import Column, BigInteger, String, SmallInteger, BINARY, DateTime
 
 from db.base import Base
 from models.mixin import TimestampMixin
@@ -7,25 +7,22 @@ from models.mixin import TimestampMixin
 class User(Base, TimestampMixin):
     __tablename__ = "user"
 
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String(32), default=None)
-    last_name = Column(String(32), default=None)
-    email = Column(String(128), nullable=False, index=True)
-    email_key = Column(String(128), nullable=False, index=True, unique=True)
-    mobile = Column(String(128), nullable=False, index=True, unique=True)
-    mobile_key = Column(String(128), nullable=False, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
+    uuid = Column(BINARY(16), unique=True)
+    email = Column(String(255), nullable=False, index=True)
+    email_key = Column(String(255), nullable=False, index=True, unique=True)
+    name = Column(String(64), default=None)
+    mobile = Column(String(255), nullable=False, index=True, unique=True)
+    mobile_key = Column(String(255), nullable=False, index=True)
     password = Column(String(128), nullable=False)
-    is_admin = Column(SmallInteger, default=0)
     is_active = Column(SmallInteger, default=0)
-    last_login = Column(DateTime, default=None)
-    last_login_ip = Column(BINARY(16))
 
 
-class UsersRoles(Base):
-    __tablename__ = 'users_roles'
+class UserLoginHistory(Base, TimestampMixin):
+    __tablename__ = "user_login_history"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False, index=True)
-    role_id = Column(Integer, nullable=False, index=True)
-
-    UniqueConstraint('user_id', 'role_id', name='users_roles')
+    id = Column(BigInteger, primary_key=True, index=True)
+    user_id = Column(BigInteger, index=True)
+    login_time = Column(DateTime, default=None)
+    login_success = Column(SmallInteger, default=0)
+    ip_address = Column(BINARY(16))
