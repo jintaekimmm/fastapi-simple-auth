@@ -1,8 +1,9 @@
 from app.factory import create_app
-from internal.logging import configure_logger
+from core.logging import configure_logger
 
-# Logging Settings
+
+# Logging
 configure_logger()
 
-# Create FastAPI
+# Create FastAPI App
 app = create_app()

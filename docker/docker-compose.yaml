@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    image: fastapi-simple-api:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.local
+    container_name: fastapi-simple-api
+    command: uvicorn --app-dir ./src app.main:app --reload --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips "*"
+    volumes:
+      - ..:/app
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2048M
+        reservations:
+          cpus: "2"
+          memory: 2048M
+    environment:
+      - ENV=local
+
+  db:
+    image: mysql:8.0.27
+    container_name: fastapi-simple-auth-db
+    cap_add:
+      - SYS_NICE
+    ports:
+      - "3306:3306"
+    volumes:
+      - $PWD/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - fastapi-simple-auth-db-volume:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: fastapi-simple-auth
+      MYSQL_DATABASE: fastapi-simple-auth
+      MYSQL_USER: fastapi-simple-auth
+      MYSQL_PASSWORD: fastapi-simple-auth
+
+volumes:
+  fastapi-simple-auth-db-volume:

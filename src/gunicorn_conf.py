@@ -1,9 +1,9 @@
 import multiprocessing
 import os
 
-PORT=9000
-HOST="0.0.0.0"
-LOG_LEVEL="info"
+PORT = 8000
+HOST = "0.0.0.0"
+LOG_LEVEL = "info"
 
 workers_per_core_str = os.getenv("WORKERS_PER_CORE", "1")
 max_workers_str = os.getenv("MAX_WORKERS")
@@ -53,7 +53,6 @@ accesslog = use_accesslog
 graceful_timeout = int(graceful_timeout_str)
 timeout = int(timeout_str)
 keepalive = int(keepalive_str)
-
 
 # For debugging and testing
 log_data = {

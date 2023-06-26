@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "fastapi-simple-auth"
+version = "0.1.0"
+description = ""
+authors = ["jintaekimmm <jintae.kimmm@gmail.com>"]
+readme = "README.md"
+packages = [{include = "fastapi_simple_auth"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.97.0"
+uvicorn = {extras = ["standard"], version = "^0.22.0"}
+sqlalchemy = "^2.0.16"
+pycryptodome = "^3.18.0"
+asyncmy = "^0.2.8"
+black = "^23.3.0"
+isort = "^5.12.0"
+bcrypt = "^4.0.1"
+gunicorn = "^20.1.0"
+loguru = "^0.7.0"
+python-jose = "^3.3.0"
+passlib = "^1.7.4"
+pydantic = {extras = ["email"], version = "^1.10.9"}
+cryptography = "^41.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
