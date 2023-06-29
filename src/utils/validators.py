@@ -22,13 +22,13 @@ def check_name(u: str) -> bool:
         complex_counts = 0
 
         for i in u:
-            if i == ' ':
+            if i == " ":
                 s += 1
-            if ord('가') <= ord(i) <= ord('힣'):
+            if ord("가") <= ord(i) <= ord("힣"):
                 k += 1
-            if ord('a') <= ord(i) <= ord('z'):
+            if ord("a") <= ord(i) <= ord("z"):
                 e += 1
-            if ord('A') <= ord(i) <= ord('Z'):
+            if ord("A") <= ord(i) <= ord("Z"):
                 e += 1
 
         # 띄어쓰기가 있는 경우에 다른 문자열이 입력된 것이 있는지 검사한다
@@ -107,7 +107,7 @@ def check_mobile(m: str) -> bool:
     """
 
     # 유효성 검증을 위한 정규표현식
-    pattern = re.compile(r'^(01[0|1|6|7|8|9])[.-]?(\d{3}|\d{4})[.-]?(\d{4})')
+    pattern = re.compile(r"^(01[0|1|6|7|8|9])[.-]?(\d{3}|\d{4})[.-]?(\d{4})")
     # hyphen_add_number = '-'.join(pattern.search(m).groups())
 
     return bool(pattern.match(m))
@@ -115,20 +115,20 @@ def check_mobile(m: str) -> bool:
 
 def name_validator(value):
     if not check_name(value):
-        raise ValueError('2~50자 이내의 한글/영문만 사용 가능합니다')
+        raise ValueError("2~50자 이내의 한글/영문만 사용 가능합니다")
 
     return value
 
 
 def password_validator(value):
     if not check_password(value):
-        raise ValueError('8자리 이상의 소문자/대문자/숫자/기호 중 두 가지 이상의 종류를 포함해야합니다')
+        raise ValueError("8자리 이상의 소문자/대문자/숫자/기호 중 두 가지 이상의 종류를 포함해야합니다")
 
     return value
 
 
 def mobile_validator(value):
     if not check_mobile(value):
-        raise ValueError('잘못된 핸드폰 번호입니다')
+        raise ValueError("잘못된 핸드폰 번호입니다")
 
     return value

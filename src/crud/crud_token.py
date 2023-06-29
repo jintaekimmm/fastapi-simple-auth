@@ -1,13 +1,12 @@
 from sqlalchemy import select, insert, delete, update
 
 from crud.abstract import DalABC
-from models.token import JWTToken
-
-from schemas import token
+import models
+import schemas
 
 
 class TokenDAL(DalABC):
-    async def get(self, refresh_token_key: str) -> JWTToken:
+    async def get(self, refresh_token_key: str) -> models.JWTToken:
         """
         refreshToken으로 저장된 토큰 정보를 조회한다
 
@@ -15,21 +14,21 @@ class TokenDAL(DalABC):
         :return:
         """
 
-        q = select(JWTToken) \
-            .where(JWTToken.refresh_token_key == refresh_token_key)
+        q = select(models.JWTToken).where(
+            models.JWTToken.refresh_token_key == refresh_token_key
+        )
 
         result = await self.session.execute(q)
         return result.scalars().first()
 
-    async def insert_token(self, new_token: token.TokenInsertSchema) -> None:
+    async def insert_token(self, new_token: schemas.TokenInsertSchema) -> None:
         """
         생성된 Token 정보를 DB에 저장한다
 
         :param new_token: 새로 생성된 JWT Token 정보를 담고 있는 스키마
         :return:
         """
-        q = insert(JWTToken)\
-            .values(**new_token.dict())
+        q = insert(models.JWTToken).values(**new_token.dict())
 
         await self.session.execute(q)
 
@@ -43,14 +42,13 @@ class TokenDAL(DalABC):
         """
 
         exists_criteria = (
-            select(JWTToken)
-            .where(JWTToken.user_id == user_id)
-            .where(JWTToken.access_token == access_token)
+            select(models.JWTToken)
+            .where(models.JWTToken.user_id == user_id)
+            .where(models.JWTToken.access_token == access_token)
             .exists()
         )
 
-        q = select(JWTToken)\
-            .where(exists_criteria)
+        q = select(models.JWTToken).where(exists_criteria)
 
         result = await self.session.execute(q)
         return bool(result.all())
@@ -64,10 +62,12 @@ class TokenDAL(DalABC):
         :return:
         """
 
-        q = delete(JWTToken) \
-            .where(JWTToken.user_id == user_id) \
-            .where(JWTToken.access_token == access_token) \
-            .execution_options(synchronize_session='fetch')
+        q = (
+            delete(models.JWTToken)
+            .where(models.JWTToken.user_id == user_id)
+            .where(models.JWTToken.access_token == access_token)
+            .execution_options(synchronize_session="fetch")
+        )
 
         await self.session.execute(q)
 
@@ -79,13 +79,19 @@ class TokenDAL(DalABC):
         :return:
         """
 
-        q = update(JWTToken) \
-            .where(JWTToken.user_id == update_token.user_id,
-                   JWTToken.refresh_token_key == update_token.refresh_token_key) \
-            .values(access_token=update_token.access_token,
-                    refresh_token=update_token.refresh_token,
-                    refresh_token_key=update_token.refresh_token_key,
-                    expires_at=update_token.expires_at) \
-            .execution_options(synchronize_session='fetch')
+        q = (
+            update(models.JWTToken)
+            .where(
+                models.JWTToken.user_id == update_token.user_id,
+                models.JWTToken.refresh_token_key == update_token.refresh_token_key,
+            )
+            .values(
+                access_token=update_token.access_token,
+                refresh_token=update_token.refresh_token,
+                refresh_token_key=update_token.refresh_token_key,
+                expires_at=update_token.expires_at,
+            )
+            .execution_options(synchronize_session="fetch")
+        )
 
         await self.session.execute(q)

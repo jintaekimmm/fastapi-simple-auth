@@ -24,7 +24,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 class GunicornLogger(Logger):
@@ -38,8 +40,17 @@ class GunicornLogger(Logger):
         self.access_log.setLevel(LOG_LEVEL)
 
         # Configure logger before gunicorn starts logging
-        logger.configure(handlers=[{"sink": sys.stdout, "level": settings.log_level, "format": LOG_FORMAT}])
-        logger.add('logs/apps_{time:YYYY-MM-DD}.log', rotation='00:00', format=LOG_FORMAT, level=settings.log_level)
+        logger.configure(
+            handlers=[
+                {"sink": sys.stdout, "level": settings.log_level, "format": LOG_FORMAT}
+            ]
+        )
+        logger.add(
+            "logs/apps_{time:YYYY-MM-DD}.log",
+            rotation="00:00",
+            format=LOG_FORMAT,
+            level=settings.log_level,
+        )
 
 
 def configure_logger() -> None:
@@ -54,5 +65,14 @@ def configure_logger() -> None:
         logging.getLogger(name).propagate = True
 
     # Configure logger (again) if gunicorn is not used
-    logger.configure(handlers=[{"sink": sys.stdout, "level": settings.log_level, "format": LOG_FORMAT}])
-    logger.add('logs/apps_{time:YYYY-MM-DD}.log', rotation='00:00', format=LOG_FORMAT, level=settings.log_level)
+    logger.configure(
+        handlers=[
+            {"sink": sys.stdout, "level": settings.log_level, "format": LOG_FORMAT}
+        ]
+    )
+    logger.add(
+        "logs/apps_{time:YYYY-MM-DD}.log",
+        rotation="00:00",
+        format=LOG_FORMAT,
+        level=settings.log_level,
+    )

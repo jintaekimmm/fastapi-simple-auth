@@ -5,7 +5,7 @@ from models.mixin import TimestampMixin
 
 
 class JWTToken(Base, TimestampMixin):
-    __tablename__ = 'jwt_token'
+    __tablename__ = "jwt_token"
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, index=True)

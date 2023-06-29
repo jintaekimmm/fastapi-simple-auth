@@ -14,8 +14,9 @@ async def authenticate(plain_password: str, user_password: str) -> bool:
     if not plain_password or not user_password:
         return False
 
-    if not Hasher.verify_password(plain_password=plain_password,
-                                  hashed_password=user_password):
+    if not Hasher.verify_password(
+        plain_password=plain_password, hashed_password=user_password
+    ):
         return False
 
     return True
