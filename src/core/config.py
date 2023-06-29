@@ -10,8 +10,8 @@ BASE_DIR = pathlib.Path(__file__).parent.parent
 
 
 class Settings(BaseSettings):
-    env: str = os.environ.get('ENV', 'production')
-    log_level: str = os.environ.get('LOG_LEVEL', 'INFO')
+    env: str = os.environ.get("ENV", "production")
+    log_level: str = os.environ.get("LOG_LEVEL", "INFO")
 
     ####################
     # Database info
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     blind_index_key: str
     aes_encrypt_key: str
 
-    jwt_algorithm: str = 'HS256'
+    jwt_algorithm: str = "HS256"
     jwt_access_secret_key: str
     jwt_refresh_secret_key: str
     jwt_access_token_expire_minutes: int = 15
@@ -38,34 +38,34 @@ class Settings(BaseSettings):
 
 class LocalSettings(Settings):
     class Config:
-        env_file = f'{BASE_DIR}/.env.local'
+        env_file = f"{BASE_DIR}/.env.local"
 
 
 class DevelopmentSettings(Settings):
     class Config:
-        env_file = f'{BASE_DIR}/.env.dev'
+        env_file = f"{BASE_DIR}/.env.dev"
 
 
 class ProductionSettings(Settings):
     class Config:
-        env_file = f'{BASE_DIR}/.env'
+        env_file = f"{BASE_DIR}/.env"
 
 
 class TestingSettings(Settings):
     class Config:
-        env_file = f'{BASE_DIR}/.env.test'
+        env_file = f"{BASE_DIR}/.env.test"
 
 
 @lru_cache
 def get_settings() -> BaseSettings:
     settings_cls_dict = {
-        'local': LocalSettings,
-        'development': DevelopmentSettings,
-        'production': ProductionSettings,
-        'testing': TestingSettings
+        "local": LocalSettings,
+        "development": DevelopmentSettings,
+        "production": ProductionSettings,
+        "testing": TestingSettings,
     }
 
-    env = os.environ.get('ENV', 'production')
+    env = os.environ.get("ENV", "production")
     settings_cls = settings_cls_dict[env]
 
     return settings_cls()

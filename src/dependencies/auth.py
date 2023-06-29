@@ -11,30 +11,36 @@ from schemas.token import UserToken
 auth_scheme = HTTPBearer(auto_error=False)
 
 
-def _get_authorization_scheme_param(authorization: HTTPAuthorizationCredentials) -> tuple[str, str]:
+def _get_authorization_scheme_param(
+    authorization: HTTPAuthorizationCredentials,
+) -> tuple[str, str]:
     if not authorization:
-        return '', ''
+        return "", ""
 
     return authorization.scheme, authorization.credentials
 
 
 class AuthorizeToken:
-    def __call__(self, authorization: HTTPAuthorizationCredentials = Depends(auth_scheme)) -> UserToken:
+    def __call__(
+        self, authorization: HTTPAuthorizationCredentials = Depends(auth_scheme)
+    ) -> UserToken:
         scheme, token = _get_authorization_scheme_param(authorization)
 
-        if scheme.lower() != "bearer" or not token or token == 'null':
+        if scheme.lower() != "bearer" or not token or token == "null":
             raise TokenCredentialsException()
 
         try:
-            payload = jwt.decode(token=token,
-                                 key=settings.jwt_access_secret_key,
-                                 algorithms=[settings.jwt_algorithm])
+            payload = jwt.decode(
+                token=token,
+                key=settings.jwt_access_secret_key,
+                algorithms=[settings.jwt_algorithm],
+            )
             try:
                 token_data = UserToken(**payload, access_token=token)
 
                 return token_data
             except ValidationError as e:
-                logger.error(f'token validation error: {e}')
+                logger.error(f"token validation error: {e}")
                 logger.exception(e)
                 raise TokenCredentialsException()
 
@@ -56,7 +62,9 @@ class AuthorizeRefreshToken:
 
 
 class AuthorizeRefreshCookie:
-    def __call__(self, refresh_token: str | None = Cookie(default=None, alias='refresh_token')) -> str:
+    def __call__(
+        self, refresh_token: str | None = Cookie(default=None, alias="refresh_token")
+    ) -> str:
         if not refresh_token:
             raise TokenCredentialsException()
 

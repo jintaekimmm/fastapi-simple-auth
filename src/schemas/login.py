@@ -13,19 +13,21 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
 
-    @validator('email')
+    @validator("email")
     def email_required_validator(cls, v):
         if not v:
-            raise ValueError('Email은 필수로 입력해야 합니다')
+            raise ValueError("Email은 필수로 입력해야 합니다")
         return v
 
-    @validator('password')
+    @validator("password")
     def password_required_validator(cls, v):
         if not v:
-            raise ValueError('비밀번호는 필수로 입력해야 합니다')
+            raise ValueError("비밀번호는 필수로 입력해야 합니다")
         return v
 
-    _password_validator = validator('password', allow_reuse=True)(validators.password_validator)
+    _password_validator = validator("password", allow_reuse=True)(
+        validators.password_validator
+    )
 
 
 class LoginHistorySchema(BaseModel):

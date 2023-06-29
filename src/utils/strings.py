@@ -11,7 +11,7 @@ def masking_str(s: str, percent: float = 0.3) -> str:
     """
 
     if not s:
-        return ''
+        return ""
 
     str_len = len(s)
     masking_len = math.ceil(str_len * percent)

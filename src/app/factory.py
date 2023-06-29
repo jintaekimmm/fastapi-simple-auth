@@ -13,16 +13,17 @@ from app.api.v1 import auth, token
 
 def create_app() -> FastAPI:
     # Environment에 따른 설정 적용
-    env = os.environ.get('ENV', 'production')
+    env = os.environ.get("ENV", "production")
 
-    if env == 'production':
+    if env == "production":
         # Swagger Docs
         openapi_url = None
     else:
         openapi_url = "/openapi.json"
 
-    app = FastAPI(openapi_url=openapi_url,
-                  swagger_ui_parameters={"defaultModelsExpandDepth": -1})
+    app = FastAPI(
+        openapi_url=openapi_url, swagger_ui_parameters={"defaultModelsExpandDepth": -1}
+    )
 
     initial_route(app)
     initial_middlewares(app)
@@ -35,8 +36,8 @@ def create_app() -> FastAPI:
 def initial_route(app: FastAPI) -> None:
     """Routes Initializing"""
 
-    app.include_router(router=auth.router, prefix='/v1')
-    app.include_router(router=token.router, prefix='/v1')
+    app.include_router(router=auth.router, prefix="/v1")
+    app.include_router(router=token.router, prefix="/v1")
 
 
 def initial_middlewares(app: FastAPI) -> None:
@@ -48,24 +49,22 @@ def initial_middlewares(app: FastAPI) -> None:
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*'],
-        expose_headers=['Content-Disposition']
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["Content-Disposition"],
     )
 
 
 def default_routes(app: FastAPI) -> None:
     """Default Routes"""
 
-    @app.get('/')
+    @app.get("/")
     async def root():
-        return DefaultJSONResponse(message='ok',
-                                   success=True)
+        return DefaultJSONResponse(message="ok", success=True)
 
-    @app.get('/health')
+    @app.get("/health")
     async def health_check():
-        return DefaultJSONResponse(message='ok',
-                                   success=True)
+        return DefaultJSONResponse(message="ok", success=True)
 
 
 def custom_exception(app: FastAPI) -> None:
@@ -76,21 +75,31 @@ def custom_exception(app: FastAPI) -> None:
     """
 
     @app.exception_handler(TokenCredentialsException)
-    async def token_credentials_exception_handlers(request: Request, exc: TokenCredentialsException):
-        return ErrorJSONResponse(message=exc.message,
-                                 status_code=status.HTTP_401_UNAUTHORIZED,
-                                 error_code=1401,
-                                 headers={'WWW-Authenticate': 'Bearer'})
+    async def token_credentials_exception_handlers(
+        request: Request, exc: TokenCredentialsException
+    ):
+        return ErrorJSONResponse(
+            message=exc.message,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            error_code=1401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     @app.exception_handler(TokenExpiredException)
-    async def token_expired_exception_handler(request: Request, exc: TokenExpiredException):
-        return ErrorJSONResponse(message=exc.message,
-                                 status_code=status.HTTP_401_UNAUTHORIZED,
-                                 error_code=1401,
-                                 headers={'WWW-Authenticate': 'Bearer'})
+    async def token_expired_exception_handler(
+        request: Request, exc: TokenExpiredException
+    ):
+        return ErrorJSONResponse(
+            message=exc.message,
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            error_code=1401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
         """
         RequestValidation Handler
 
@@ -100,4 +109,7 @@ def custom_exception(app: FastAPI) -> None:
         log: 2023-06-20 22:07:895 ERROR app.factory:validation_exception_handler:147 validation error: [{'loc': ('body',), 'msg': 'field required', 'type': 'value_error.missing'}]
         """
         logger.error(f"validation error: {exc.errors()}")
-        return JSONResponse(content={'detail': exc.errors()}, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return JSONResponse(
+            content={"detail": exc.errors()},
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        )

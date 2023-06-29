@@ -2,12 +2,12 @@ from sqlalchemy import select, insert, func
 from sqlalchemy.engine import cursor
 
 from crud.abstract import DalABC
-from models.user import User, UserLoginHistory
-from schemas import register, login
+import models
+import schemas
 
 
 class UserDAL(DalABC):
-    async def get_by_user_id(self, user_id: int) -> User:
+    async def get_by_user_id(self, user_id: int) -> models.User:
         """
         사용자 Id로 사용자를 검색하여 결과를 반환한다
 
@@ -15,13 +15,12 @@ class UserDAL(DalABC):
         :return: 사용자 User 데이터를 반환한다
         """
 
-        q = select(User) \
-            .where(User.id == user_id)
+        q = select(models.User).where(models.User.id == user_id)
 
         result = await self.session.execute(q)
         return result.scalars().first()
 
-    async def get_by_email(self, email_key: str) -> User:
+    async def get_by_email(self, email_key: str) -> models.User:
         """
         이메일 주소로 사용자를 검색하여 결과를 반환한다
 
@@ -29,8 +28,7 @@ class UserDAL(DalABC):
         :return: 사용자 User 데이터를 반환한다
         """
 
-        q = select(User) \
-            .where(User.email_key == email_key)
+        q = select(models.User).where(models.User.email_key == email_key)
 
         result = await self.session.execute(q)
         return result.scalars().first()
@@ -44,13 +42,12 @@ class UserDAL(DalABC):
         """
 
         exists_criteria = (
-            select(User.email_key)
-            .where(User.email_key == email_key)
+            select(models.User.email_key)
+            .where(models.User.email_key == email_key)
             .exists()
         )
 
-        q = select(User.id) \
-            .where(exists_criteria)
+        q = select(models.User.id).where(exists_criteria)
 
         result = await self.session.execute(q)
         return bool(result.all())
@@ -64,18 +61,19 @@ class UserDAL(DalABC):
         """
 
         exists_criteria = (
-            select(User.mobile_key)
-            .where(User.mobile_key == mobile_key)
+            select(models.User.mobile_key)
+            .where(models.User.mobile_key == mobile_key)
             .exists()
         )
 
-        q = select(User.id) \
-            .where(exists_criteria)
+        q = select(models.User.id).where(exists_criteria)
 
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_register(self, new_register: register.RegisterInsertSchema) -> cursor.CursorResult:
+    async def insert_register(
+        self, new_register: schemas.RegisterInsertSchema
+    ) -> cursor.CursorResult:
         """
         회원가입 정보를 테이블에 저장한다
 
@@ -83,21 +81,23 @@ class UserDAL(DalABC):
         :return:
         """
 
-        q = insert(User).values(**new_register.dict())
+        q = insert(models.User).values(**new_register.dict())
 
         result = await self.session.execute(q)
         return result
 
 
 class UserLoginHistoryDAL(DalABC):
-    async def insert_login_history(self, login_history: login.LoginHistorySchema) -> None:
+    async def insert_login_history(
+        self, login_history: schemas.LoginHistorySchema
+    ) -> None:
         """
         로그인 접속 기록을 DB에 저장한다
         """
 
         _login_dict = login_history.dict()
-        _login_dict['ip_address'] = func.inet6_aton(_login_dict.get('ip_address'))
+        _login_dict["ip_address"] = func.inet6_aton(_login_dict.get("ip_address"))
 
-        q = insert(UserLoginHistory).values(**_login_dict)
+        q = insert(models.UserLoginHistory).values(**_login_dict)
 
         await self.session.execute(q)

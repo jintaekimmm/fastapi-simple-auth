@@ -2,8 +2,6 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from schemas.responses import DefaultResponse
-
 
 class UserToken(BaseModel):
     """
@@ -40,7 +38,7 @@ class TokenSchema(DefaultTokenSchema):
     JWT Token 스키마
     """
 
-    token_type: str = 'Bearer'
+    token_type: str = "Bearer"
     access_token: str
     expires_in: int
     refresh_token: str
@@ -54,6 +52,7 @@ class TokenInsertSchema(BaseModel):
     """
     Token 정보를 DB에 저장할 때 사용하는 스키마
     """
+
     user_id: int
     access_token: str
     refresh_token: str
@@ -66,6 +65,7 @@ class TokenUpdateSchema(BaseModel):
     """
     갱신한 Token 정보를 DB에 저장할 때 사용하는 스키마
     """
+
     user_id: int
     access_token: str
     refresh_token: str
@@ -79,7 +79,7 @@ class TokenAccessOnlySchema(BaseModel):
     - refreshToken 정보를 제외한 스키마
     """
 
-    token_type: str = 'Bearer'
+    token_type: str = "Bearer"
     access_token: str
     expires_in: int
     scope: str
@@ -91,6 +91,7 @@ class AuthTokenSchema(BaseModel):
     """
     Authorization Header에 사용할 token 스키마
     """
+
     iat: int
     exp: int
     sub: str

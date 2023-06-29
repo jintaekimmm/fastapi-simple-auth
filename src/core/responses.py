@@ -21,18 +21,19 @@ class DefaultJSONResponse(JSONResponse):
                                success=True,
                                status_code=status.HTTP_200_OK)
     """
+
     def __init__(
-            self,
-            message: Any,
-            success: bool = True,
-            status_code: int = 200,
-            headers: dict[str, str] | None = None,
-            media_type: str | None = None,
-            background: BackgroundTask | None = None
+        self,
+        message: Any,
+        success: bool = True,
+        status_code: int = 200,
+        headers: dict[str, str] | None = None,
+        media_type: str | None = None,
+        background: BackgroundTask | None = None,
     ) -> None:
         content = {
-            'success': success,
-            'message': message,
+            "success": success,
+            "message": message,
         }
 
         super().__init__(content, status_code, headers, media_type, background)
@@ -55,21 +56,21 @@ class ErrorJSONResponse(JSONResponse):
                              error_code=404,
                              status_code=status.HTTP_404_NOT_FOUND)
     """
-    def __init__(
-            self,
-            message: Any,
-            success: bool = False,
-            status_code: int = 200,
-            error_code: int | None = None,
-            headers: dict[str, str] | None = None,
-            media_type: str | None = None,
-            background: BackgroundTask | None = None
-    ) -> None:
 
+    def __init__(
+        self,
+        message: Any,
+        success: bool = False,
+        status_code: int = 200,
+        error_code: int | None = None,
+        headers: dict[str, str] | None = None,
+        media_type: str | None = None,
+        background: BackgroundTask | None = None,
+    ) -> None:
         content = {
-            'success': success,
-            'message': message,
-            'error_code': error_code,
+            "success": success,
+            "message": message,
+            "error_code": error_code,
         }
 
         super().__init__(content, status_code, headers, media_type, background)
