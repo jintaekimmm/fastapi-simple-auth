@@ -17,7 +17,6 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV TZ=Asia/Seoul
-ENV CONFIG_ENV=local
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
@@ -27,11 +26,12 @@ RUN apt-get update \
 COPY --from=requirements-stage /wheels /wheels
 COPY --from=requirements-stage /tmp/requirements.txt .
 
-RUN pip install --upgrade pip
-RUN pip install --no-cache /wheels/*
+RUN pip install --upgrade pip \
+    && pip install --no-cache /wheels/*
 
 COPY ./src .
 COPY ./bin/entrypoint.sh ./bin/entrypoint.sh
+COPY .env .env
 
 EXPOSE 8000
 
