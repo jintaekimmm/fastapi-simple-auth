@@ -8,7 +8,7 @@ from loguru import logger
 
 from core.exceptions import TokenCredentialsException, TokenExpiredException
 from core.responses import DefaultJSONResponse, ErrorJSONResponse
-from app.api.v1 import auth, token
+from app.api import auth, token
 
 
 def create_app() -> FastAPI:
@@ -36,8 +36,8 @@ def create_app() -> FastAPI:
 def initial_route(app: FastAPI) -> None:
     """Routes Initializing"""
 
-    app.include_router(router=auth.router, prefix="/v1")
-    app.include_router(router=token.router, prefix="/v1")
+    app.include_router(router=auth.router)
+    app.include_router(router=token.router)
 
 
 def initial_middlewares(app: FastAPI) -> None:
