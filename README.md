@@ -26,6 +26,10 @@ DB_PORT=3306
 DB_NAME=DATABASE_NAME
 DB_USER=DATABASE_USERNAME
 DB_PASSWORD=DATABASE_PASSWORD
+
+# OAUTH
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 ### Install & Running
@@ -48,3 +52,5 @@ docker run -itd --name fastapi-simple-auth -p 8000:8000 fastapi-simple-auth:{VER
 ## Docs
 
 [Default API docs](docs/default.md)
+
+[Google OAuth docs](docs/google_oauth.md)
