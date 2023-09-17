@@ -4,9 +4,11 @@ import pathlib
 from functools import lru_cache
 
 from pydantic import BaseSettings
+from fastapi.templating import Jinja2Templates
 
 log = logging.getLogger("uvicorn")
 BASE_DIR = pathlib.Path(__file__).parent.parent
+TEMPLATES = Jinja2Templates(directory=f"{BASE_DIR}/html")
 
 
 class Settings(BaseSettings):
@@ -34,6 +36,12 @@ class Settings(BaseSettings):
     jwt_refresh_secret_key: str
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_minutes: int = 10080
+
+    ####################
+    # OAuth: Google
+    ####################
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
 
 
 class LocalSettings(Settings):

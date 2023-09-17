@@ -71,17 +71,17 @@ class UserDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_register(
-        self, new_register: schemas.RegisterInsertSchema
+    async def insert_user(
+        self, new_user: schemas.UserInsertSchema
     ) -> cursor.CursorResult:
         """
         회원가입 정보를 테이블에 저장한다
 
-        :param new_register: 회원가입 정보가 포함된 스키마 정보
+        :param new_user: 회원가입 정보가 포함된 스키마 정보
         :return:
         """
 
-        q = insert(models.User).values(**new_register.dict())
+        q = insert(models.User).values(**new_user.dict())
 
         result = await self.session.execute(q)
         return result
@@ -101,3 +101,49 @@ class UserLoginHistoryDAL(DalABC):
         q = insert(models.UserLoginHistory).values(**_login_dict)
 
         await self.session.execute(q)
+
+
+class SocialUserAccountDAL(DalABC):
+    async def get_user(self, provider_id: str, sub: str) -> models.User:
+        """
+        OAuth 사용자의 계정 정보를 조회하여 반환한다
+        """
+
+        q = (
+            select(models.User)
+            .join(
+                models.SocialUserAccount,
+                models.SocialUserAccount.user_id == models.User.id,
+            )
+            .where(models.SocialUserAccount.provider_id == provider_id)
+            .where(models.SocialUserAccount.sub == sub)
+        )
+
+        result = await self.session.execute(q)
+        return result.scalars().first()
+
+    async def exists_user(self, provider_id: str, sub: str) -> bool:
+        """
+        OAuth와 연동된 계정이 존재하는지 확인한다
+        """
+
+        exists_criteria = (
+            select(models.SocialUserAccount.id)
+            .where(models.SocialUserAccount.provider_id == provider_id)
+            .where(models.SocialUserAccount.sub == sub)
+            .exists()
+        )
+
+        q = select(models.SocialUserAccount.id).where(exists_criteria)
+
+        result = await self.session.execute(q)
+        return bool(result.all())
+
+    async def insert_user(self, new_user: schemas.OAuthUserInsertSchema):
+        """
+        OAuth 연동 계정 정보를 저장한다
+        """
+
+        q = insert(models.SocialUserAccount).values(**new_user.dict())
+
+        result = await self.session.execute(q)
