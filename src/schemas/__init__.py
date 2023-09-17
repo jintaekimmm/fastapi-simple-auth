@@ -10,7 +10,8 @@ from .token import (
 )
 from .register import (
     RegisterRequestSchema,
-    RegisterInsertSchema,
     RegisterResponseSchema,
+    UserInsertSchema,
+    OAuthUserInsertSchema,
 )
 from .responses import DefaultResponse, ErrorResponse

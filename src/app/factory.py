@@ -8,7 +8,7 @@ from loguru import logger
 
 from core.exceptions import TokenCredentialsException, TokenExpiredException
 from core.responses import DefaultJSONResponse, ErrorJSONResponse
-from app.api.v1 import auth, token
+from app.api import auth, token, oauth
 
 
 def create_app() -> FastAPI:
@@ -25,22 +25,30 @@ def create_app() -> FastAPI:
         openapi_url=openapi_url, swagger_ui_parameters={"defaultModelsExpandDepth": -1}
     )
 
-    initial_route(app)
-    initial_middlewares(app)
-    default_routes(app)
-    custom_exception(app)
+    set_routes(app)
+    set_middlewares(app)
+    set_custom_exception(app)
 
     return app
 
 
-def initial_route(app: FastAPI) -> None:
+def set_routes(app: FastAPI) -> None:
     """Routes Initializing"""
 
-    app.include_router(router=auth.router, prefix="/v1")
-    app.include_router(router=token.router, prefix="/v1")
+    @app.get("/")
+    async def root():
+        return DefaultJSONResponse(message="ok", success=True)
+
+    @app.get("/health")
+    async def health_check():
+        return DefaultJSONResponse(message="ok", success=True)
+
+    app.include_router(router=auth.router)
+    app.include_router(router=token.router)
+    app.include_router(router=oauth.google.router, prefix="/oauth")
 
 
-def initial_middlewares(app: FastAPI) -> None:
+def set_middlewares(app: FastAPI) -> None:
     """Middleware Initializing"""
 
     origins = ["*"]
@@ -55,19 +63,7 @@ def initial_middlewares(app: FastAPI) -> None:
     )
 
 
-def default_routes(app: FastAPI) -> None:
-    """Default Routes"""
-
-    @app.get("/")
-    async def root():
-        return DefaultJSONResponse(message="ok", success=True)
-
-    @app.get("/health")
-    async def health_check():
-        return DefaultJSONResponse(message="ok", success=True)
-
-
-def custom_exception(app: FastAPI) -> None:
+def set_custom_exception(app: FastAPI) -> None:
     """
     Set Custom Exception Handlers
 

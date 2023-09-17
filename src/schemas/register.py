@@ -53,9 +53,9 @@ class RegisterRequestSchema(BaseModel):
     )
 
 
-class RegisterInsertSchema(BaseModel):
+class UserInsertSchema(BaseModel):
     """
-    회원가입 정보를 DB에 Insert할 때 사용하는 스키마
+    회원가입 정보를 DB에 저장할 때 사용하는 스키마
     """
 
     name: str
@@ -64,7 +64,8 @@ class RegisterInsertSchema(BaseModel):
     uuid: bytes
     mobile: str | None
     mobile_key: str | None
-    password: str
+    password: str | None
+    provider_id: str
     is_active: int = 0
 
 
@@ -74,3 +75,16 @@ class RegisterResponseSchema(DefaultResponse):
     """
 
     id: int
+
+
+class OAuthUserInsertSchema(BaseModel):
+    """
+    OAuth 외부 유저 정보를 DB에 저장할 때 사용하는 스키마
+    """
+
+    user_id: int
+    provider_id: str
+    sub: str
+    name: str
+    given_name: str
+    family_name: str

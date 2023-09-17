@@ -3,25 +3,46 @@ USE `fastapi-simple-auth`;
 -- 사용자 테이블
 CREATE TABLE IF NOT EXISTS user
 (
-    id         bigint auto_increment primary key,
-    uuid       binary(16)           not null comment '',
-    email      varchar(255)         null comment '이메일 주소(AES 256)',
-    email_key  varchar(255)         null comment '이메일 블라인드 인덱스(SHA 256)',
-    mobile     varchar(255)         null comment '핸드폰 번호(AES 256)',
-    mobile_key varchar(255)         null comment '핸드폰 번호 블라인드 인덱스(SHA 256)',
-    name       varchar(64)          not null comment '이름',
-    password   varchar(255)         not null comment '비밀번호',
-    is_active  tinyint(1) default 0 not null comment '계정 활성화 여부',
-    created_at datetime(6)          not null comment '생성일자',
-    updated_at datetime(6)          not null comment '변경일자',
+    id          bigint auto_increment
+        primary key,
+    uuid        binary(16)           not null,
+    email       varchar(255)         null comment '이메일 주소(AES 256)',
+    email_key   varchar(255)         null comment '이메일 블라인드 인덱스(SHA 256)',
+    mobile      varchar(255)         null comment '핸드폰 번호(AES 256)',
+    mobile_key  varchar(255)         null comment '핸드폰 번호 블라인드 인덱스(SHA 256)',
+    name        varchar(64)          not null comment '이름',
+    password    varchar(255)         null comment '비밀번호',
+    provider_id varchar(64)          null comment 'OAuth 제공 업체',
+    is_active   tinyint(1) default 0 not null comment '계정 활성화 여부',
+    created_at  datetime(6)          not null comment '생성일자',
+    updated_at  datetime(6)          not null comment '변경일자',
 
-    constraint uq_email
-        unique (email_key),
-    constraint uq_mobile
-        unique (mobile_key),
+    constraint uq_email_key_provider_id
+        unique (email_key, provider_id),
     constraint uq_uuid
         unique (uuid)
 );
+
+-- OAuth 사용자 정보 테이블
+CREATE TABLE IF NOT EXISTS social_user_account
+(
+    id          bigint auto_increment primary key,
+    user_id     bigint       null comment '사용자 ID(FK)',
+    provider_id varchar(64)  not null comment 'OAuth 제공 업체',
+    sub         varchar(255) not null comment 'OAuth 사용자 식별 정보',
+    name        varchar(128) null comment 'OAuth 사용자 이름(전체 이름)',
+    given_name  varchar(128) null comment 'OAuth 사용자 이름(성씨를 제외한 이름)',
+    family_name varchar(128) null comment 'OAuth 사용자 이름(성씨)',
+    created_at  datetime(6)  not null comment '생성일자',
+    updated_at  datetime(6)  not null comment '변경일자',
+
+    constraint uq_provider_id_sub
+        unique (provider_id, sub)
+);
+
+CREATE INDEX idx_user_id ON social_user_account (user_id);
+CREATE INDEX idx_provider_id ON social_user_account (provider_id);
+CREATE INDEX idx_sub on social_user_account (sub);
 
 -- 사용자 로그인 이력 테이블
 CREATE TABLE IF NOT EXISTS user_login_history

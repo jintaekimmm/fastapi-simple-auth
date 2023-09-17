@@ -22,6 +22,10 @@ python-jose = "^3.3.0"
 passlib = "^1.7.4"
 pydantic = {extras = ["email"], version = "^1.10.9"}
 cryptography = "^41.0.1"
+google-auth = "^2.23.0"
+Jinja2 = "^3.1.2"
+requests = "^2.31.0"
+python-multipart = "^0.0.6"
 
 
 [build-system]

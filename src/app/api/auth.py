@@ -14,6 +14,7 @@ from dependencies.auth import AuthorizeToken, AuthorizeRefreshToken
 from dependencies.database import get_session
 import models
 import schemas
+from utils.constants.oauth import ProviderID
 from utils.security.auth import authenticate
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
@@ -70,7 +71,7 @@ async def register_user(
         else:
             mobile = aes.encrypt(register_request.mobile)
 
-    new_register = schemas.RegisterInsertSchema(
+    new_user = schemas.UserInsertSchema(
         name=register_request.name,
         email=aes.encrypt(register_request.email),
         email_key=email_key,
@@ -78,11 +79,12 @@ async def register_user(
         mobile=mobile,
         mobile_key=mobile_key,
         password=Hasher.get_password_hash(register_request.password1),
+        provider_id=ProviderID.LOCAL.name,
         is_active=1,
     )
 
     try:
-        result = await user_dal.insert_register(new_register=new_register)
+        result = await user_dal.insert_user(new_user=new_user)
         new_user_id = result.inserted_primary_key[0]
 
         await session.commit()
@@ -227,7 +229,7 @@ async def api_login(
         await session.close()
 
     logger.info(
-        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)} }'
+        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)}, "provider_id": "LOCAL" }'
     )
 
     response = schemas.TokenSchema(**new_token.dict())
@@ -410,7 +412,7 @@ async def web_login(
         await session.close()
 
     logger.info(
-        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)} }'
+        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)}, "provider_id": "LOCAL" }'
     )
 
     token_response = schemas.TokenAccessOnlySchema(**new_token.dict())
