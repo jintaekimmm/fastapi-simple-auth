@@ -229,10 +229,10 @@ async def api_login(
         await session.close()
 
     logger.info(
-        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)}, "provider_id": "LOCAL" }'
+        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name), "provider_id": "LOCAL"} }'
     )
 
-    response = schemas.TokenSchema(**new_token.dict())
+    response = schemas.TokenSchema(**new_token.model_dump())
 
     return response
 
@@ -415,9 +415,9 @@ async def web_login(
         f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)}, "provider_id": "LOCAL" }'
     )
 
-    token_response = schemas.TokenAccessOnlySchema(**new_token.dict())
+    token_response = schemas.TokenAccessOnlySchema(**new_token.model_dump())
     # accessToken은 json으로 반환한다
-    response = JSONResponse(content=token_response.dict())
+    response = JSONResponse(content=token_response.model_dump())
     # refreshToken은 Cookie로 반환한다
     response.set_cookie(
         key="refresh_token",

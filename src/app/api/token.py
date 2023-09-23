@@ -100,7 +100,7 @@ async def api_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    response = schemas.TokenSchema(**new_token.dict())
+    response = schemas.TokenSchema(**new_token.model_dump())
 
     return response
 
@@ -187,9 +187,9 @@ async def web_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    token_response = schemas.TokenAccessOnlySchema(**new_token.dict())
+    token_response = schemas.TokenAccessOnlySchema(**new_token.model_dump())
     # accessToken은 json으로 반환한다
-    response = JSONResponse(content=token_response.dict())
+    response = JSONResponse(content=token_response.model_dump())
     # refreshToken은 Cookie로 반환한다
     response.set_cookie(
         key="refresh_token",

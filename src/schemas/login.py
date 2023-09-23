@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 
 from utils import validators
 
@@ -13,21 +13,20 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
 
-    @validator("email")
-    def email_required_validator(cls, v):
+
+    @field_validator("email")
+    @classmethod
+    def val_email(cls, v):
         if not v:
             raise ValueError("Email은 필수로 입력해야 합니다")
         return v
 
-    @validator("password")
-    def password_required_validator(cls, v):
+    @field_validator("password")
+    @classmethod
+    def val_password(cls, v):
         if not v:
             raise ValueError("비밀번호는 필수로 입력해야 합니다")
-        return v
-
-    _password_validator = validator("password", allow_reuse=True)(
-        validators.password_validator
-    )
+        return validators.password_validator(v)
 
 
 class LoginHistorySchema(BaseModel):

@@ -1,8 +1,6 @@
-from typing import Optional
+from pydantic import BaseModel, EmailStr, field_validator
+from pydantic_core.core_schema import FieldValidationInfo
 
-from pydantic import BaseModel, EmailStr, validator
-
-from core.responses import DefaultJSONResponse
 from schemas.responses import DefaultResponse
 from utils import validators
 
@@ -18,39 +16,46 @@ class RegisterRequestSchema(BaseModel):
     password1: str
     password2: str
 
-    @validator("email")
-    def email_required_validator(cls, v):
+
+    @field_validator("name")
+    @classmethod
+    def val_name(cls, v: str):
+        if not v:
+            raise ValueError("이름은 필수로 입력해야 합니다")
+        return validators.name_validator(v)
+
+    @field_validator("email")
+    @classmethod
+    def val_email(cls, v: str):
         if not v:
             raise ValueError("Email은 필수로 입력해야 합니다")
         return v
 
-    @validator("mobile")
-    def mobile_cleaning_validator(cls, v):
+    @field_validator("mobile")
+    @classmethod
+    def val_mobile(cls, v: str):
         """
         '-' 하이픈 문자열을 모두 삭제하고 반환한다
         """
         if v:
-            return v.replace("-", "")
+            return validators.mobile_validator(v.replace("-", ""))
 
-    @validator("password1", "password2")
-    def password_required_validator(cls, v):
+    @field_validator("password1", "password2")
+    @classmethod
+    def val_password1_password2(cls, v: str):
         if not v:
             raise ValueError("비밀번호는 필수로 입력해야 합니다")
-        return v
+        return validators.password_validator(v)
 
-    @validator("password2")
-    def password_match_validator(cls, v, values):
-        if "password1" in values and v != values["password1"]:
+    @field_validator("password2", mode="after")
+    @classmethod
+    def val_password_check(cls, v: str, info: FieldValidationInfo):
+        pwd1 = info.data.get("password1", None)
+        pwd2 = v
+
+        if pwd1 is not None and pwd2 is not None and pwd1 != pwd2:
             raise ValueError("비밀번호가 일치하지 않습니다")
         return v
-
-    _name_validator = validator("name", allow_reuse=True)(validators.name_validator)
-    _password_validator = validator("password1", allow_reuse=True)(
-        validators.password_validator
-    )
-    _mobile_validator = validator("mobile", allow_reuse=True)(
-        validators.mobile_validator
-    )
 
 
 class UserInsertSchema(BaseModel):

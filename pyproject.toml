@@ -8,7 +8,7 @@ packages = [{include = "fastapi_simple_auth"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = "^0.97.0"
+fastapi = "^0.103.1"
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 sqlalchemy = "^2.0.16"
 pycryptodome = "^3.18.0"
@@ -20,12 +20,13 @@ gunicorn = "^20.1.0"
 loguru = "^0.7.0"
 python-jose = "^3.3.0"
 passlib = "^1.7.4"
-pydantic = {extras = ["email"], version = "^1.10.9"}
+pydantic = {extras = ["email"], version = "^2.3.0"}
 cryptography = "^41.0.1"
 google-auth = "^2.23.0"
 Jinja2 = "^3.1.2"
 requests = "^2.31.0"
 python-multipart = "^0.0.6"
+pydantic-settings = "^2.0.3"
 
 
 [build-system]

@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Annotated
 
 from fastapi import APIRouter, Request, Depends, Form, status
 from google.auth.transport import requests
@@ -224,6 +223,6 @@ async def google_login_callback(
         f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(user_info["email"]), "provider_id": provider_id} }'
     )
 
-    response = schemas.TokenSchema(**new_token.dict())
+    response = schemas.TokenSchema(**new_token.model_dump())
 
     return response
