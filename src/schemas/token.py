@@ -8,8 +8,8 @@ class UserToken(BaseModel):
     Authorization Header에서 토큰을 바인딩할 때 사용하는 스키마
     """
 
-    iat: str
-    exp: str
+    iat: int
+    exp: int
     sub: str
     type: str
     access_token: str | None

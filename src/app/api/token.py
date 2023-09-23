@@ -10,8 +10,7 @@ from core.responses import ErrorJSONResponse
 import crud
 from dependencies.auth import AuthorizeRefreshToken, AuthorizeRefreshCookie
 from dependencies.database import get_session
-import models
-import schemas
+from schemas import TokenSchema, ErrorResponse, TokenUpdateSchema, TokenAccessOnlySchema
 from utils.security.encryption import Hasher, AESCipher
 from utils.security.token import create_new_jwt_token
 
@@ -20,11 +19,11 @@ router = APIRouter(prefix="/token", tags=["Token"])
 
 @router.post(
     "/refresh/api",
-    response_model=schemas.TokenSchema,
+    response_model=TokenSchema,
     responses={
-        401: {"model": schemas.ErrorResponse},
-        404: {"model": schemas.ErrorResponse},
-        500: {"model": schemas.ErrorResponse},
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
     },
 )
 async def api_token_refresh(
@@ -43,7 +42,7 @@ async def api_token_refresh(
     token_dal = crud.TokenDAL(session=session)
 
     # 저장되어 있는 refreshToken을 조회한다
-    saved_token: models.JWTToken = await token_dal.get(
+    saved_token = await token_dal.get(
         refresh_token_key=Hasher.hmac_sha256(refresh_token)
     )
     if not saved_token:
@@ -58,7 +57,7 @@ async def api_token_refresh(
         logger.info(f'토큰이 만료되었습니다 { {"user_id": saved_token.user_id} }')
         raise TokenExpiredException()
 
-    login_user: models.User = await user_dal.get_by_user_id(user_id=saved_token.user_id)
+    login_user = await user_dal.get_by_user_id(user_id=saved_token.user_id)
     if not login_user:
         logger.info(f'사용자를 찾을 수 없습니다. { {"user_id": saved_token.user_id} }')
         return ErrorJSONResponse(
@@ -69,12 +68,10 @@ async def api_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: schemas.TokenSchema = await create_new_jwt_token(
-        sub=str(saved_token.user_id)
-    )
+    new_token: TokenSchema = await create_new_jwt_token(sub=str(saved_token.user_id))
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
-    update_token = schemas.TokenUpdateSchema(
+    update_token = TokenUpdateSchema(
         user_id=saved_token.user_id,
         access_token=new_token.access_token,
         refresh_token=saved_token.refresh_token,
@@ -100,18 +97,18 @@ async def api_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    response = schemas.TokenSchema(**new_token.dict())
+    response = TokenSchema(**new_token.model_dump())
 
     return response
 
 
 @router.post(
     "/refresh/web",
-    response_model=schemas.TokenSchema,
+    response_model=TokenSchema,
     responses={
-        401: {"model": schemas.ErrorResponse},
-        404: {"model": schemas.ErrorResponse},
-        500: {"model": schemas.ErrorResponse},
+        401: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
     },
 )
 async def web_token_refresh(
@@ -130,7 +127,7 @@ async def web_token_refresh(
     token_dal = crud.TokenDAL(session=session)
 
     # 저장되어 있는 refreshToken을 조회한다
-    saved_token: models.JWTToken = await token_dal.get(
+    saved_token = await token_dal.get(
         refresh_token_key=Hasher.hmac_sha256(refresh_token)
     )
     if not saved_token:
@@ -145,7 +142,7 @@ async def web_token_refresh(
         logger.info(f'토큰이 만료되었습니다 { {"user_id": saved_token.user_id} }')
         raise TokenExpiredException()
 
-    login_user: models.User = await user_dal.get_by_user_id(user_id=saved_token.user_id)
+    login_user = await user_dal.get_by_user_id(user_id=saved_token.user_id)
     if not login_user:
         logger.info(f'사용자를 찾을 수 없습니다. { {"user_id": saved_token.user_id} }')
         return ErrorJSONResponse(
@@ -156,12 +153,10 @@ async def web_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: schemas.TokenSchema = await create_new_jwt_token(
-        sub=str(saved_token.user_id)
-    )
+    new_token: TokenSchema = await create_new_jwt_token(sub=str(saved_token.user_id))
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
-    update_token = schemas.TokenUpdateSchema(
+    update_token = TokenUpdateSchema(
         user_id=saved_token.user_id,
         access_token=new_token.access_token,
         refresh_token=saved_token.refresh_token,
@@ -187,9 +182,9 @@ async def web_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    token_response = schemas.TokenAccessOnlySchema(**new_token.dict())
+    token_response = TokenAccessOnlySchema(**new_token.model_dump())
     # accessToken은 json으로 반환한다
-    response = JSONResponse(content=token_response.dict())
+    response = JSONResponse(content=token_response.model_dump())
     # refreshToken은 Cookie로 반환한다
     response.set_cookie(
         key="refresh_token",

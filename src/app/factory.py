@@ -99,13 +99,29 @@ def set_custom_exception(app: FastAPI) -> None:
         """
         RequestValidation Handler
 
-        HTTP Status 422(UNPROCESSABLE_ENTITY)의 error logging을 위한 exception handler이다
-        error response만 logging하고 원래 형식으로 결과를 반환한다
-
-        log: 2023-06-20 22:07:895 ERROR app.factory:validation_exception_handler:147 validation error: [{'loc': ('body',), 'msg': 'field required', 'type': 'value_error.missing'}]
+        HTTP Status 422(UNPROCESSABLE_ENTITY)의 error logging과 response message 설정을 위한 exception handler
         """
+
         logger.error(f"validation error: {exc.errors()}")
-        return JSONResponse(
-            content={"detail": exc.errors()},
+
+        async def parse_error_message(err: dict) -> str:
+            try:
+                if "error" in err.get("msg", "").split(",")[0]:
+                    new_error_msg = "".join(err.get("msg", "").split(",")[1:])
+                else:
+                    new_error_msg = err["msg"]
+            except:
+                new_error_msg = err["msg"]
+
+            return new_error_msg
+
+        errors = [
+            {"field": error["loc"][-1], "message": await parse_error_message(error)}
+            for error in exc.errors()
+        ]
+
+        return ErrorJSONResponse(
+            message=errors,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            error_code=1422,
         )
