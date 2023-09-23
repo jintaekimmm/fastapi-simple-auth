@@ -116,15 +116,12 @@ def set_custom_exception(app: FastAPI) -> None:
             return new_error_msg
 
         errors = [
-            {
-                "field": error["loc"][-1],
-                "message": await parse_error_message(error)
-            }
-            for error in exc.errors()]
-
+            {"field": error["loc"][-1], "message": await parse_error_message(error)}
+            for error in exc.errors()
+        ]
 
         return ErrorJSONResponse(
             message=errors,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            error_code=1422
+            error_code=1422,
         )

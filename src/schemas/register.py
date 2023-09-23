@@ -16,7 +16,6 @@ class RegisterRequestSchema(BaseModel):
     password1: str
     password2: str
 
-
     @field_validator("name")
     @classmethod
     def val_name(cls, v: str):

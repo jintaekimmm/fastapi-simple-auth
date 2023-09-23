@@ -13,7 +13,6 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
 
-
     @field_validator("email")
     @classmethod
     def val_email(cls, v):
