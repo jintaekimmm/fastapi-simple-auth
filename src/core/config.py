@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     google_client_id: str | None = None
     google_client_secret: str | None = None
 
+    ####################
+    # OAuth: Naver
+    ####################
+    naver_client_id: str | None = None
+    naver_client_secret: str | None = None
+    naver_callback_url: str | None = None
+
 
 class LocalSettings(Settings):
     class Config:
