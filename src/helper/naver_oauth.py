@@ -156,7 +156,7 @@ class NaverOAuthClient:
 
             body = resp.get("response", {})
 
-            if not body or body.get("id", None):
+            if not body or not body.get("id", None):
                 logger.error(
                     f"Failed to get NAVER user profile. status: {response.status} error: {repr(resp)}"
                 )
