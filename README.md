@@ -27,9 +27,14 @@ DB_NAME=DATABASE_NAME
 DB_USER=DATABASE_USERNAME
 DB_PASSWORD=DATABASE_PASSWORD
 
-# OAUTH
+# OAUTH: Google
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+
+# OAuth: Naver
+NAVER_CLIENT_ID=
+NAVER_CLIENT_SECRET=
+NAVER_CALLBACK_URL=
 ```
 
 ### Install & Running
@@ -51,6 +56,9 @@ docker run -itd --name fastapi-simple-auth -p 8000:8000 fastapi-simple-auth:{VER
 
 ## Docs
 
-[Default API docs](docs/default.md)
+[Default API docs](docs/DEFAULT.md)
 
-[Google OAuth docs](docs/google_oauth.md)
+[Google OAuth docs](docs/GOOGLE_OAUTH.md)
+
+[Naver OAuth docs](docs/NAVER_OAUTH.md)
+

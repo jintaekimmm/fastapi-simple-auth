@@ -11,10 +11,10 @@
 
 env 파일에 Google ClientID, Client Secret을 추가한다
 
-```bash
+```shell
 ... 중략
 
-# OAUTH
+# OAauth: Google
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 ```
@@ -24,7 +24,7 @@ GOOGLE_CLIENT_SECRET=
 google cloud platform 어플리케이션의 redirect_uri에 다음 uri를 설정한다
 
 ```shell
-http://HOST:8000/google/login/callback
+http://HOST:8000/oauth/google/login/callback
 ```
 
 ## Google Login Flow(redirect)
@@ -36,4 +36,4 @@ http://HOST:8000/google/login/callback
 `redirect mode`
 redirect UX 모드를 사용하면 사용자 브라우저의 전체 페이지 리디렉션을 사용하여 로그인 UX 흐름을 실행하고 `Google에서 POST 요청을 사용하여 JWT를 로그인 엔드포인트에 직접 반환합니다.` 
 
--> 구글 로그인 페이지에서 로그인을 성공하면, 구글이 서버에게 POST로 JWT를 전달해줍니다. 콜백에서는 이 JWT를 받아서 처리하여 사용자 로그인 처리를 하면된다
+-> 구글 로그인 페이지에서 로그인을 성공하면, 구글이 서버(callback)에게 POST로 JWT를 전달해준다. 콜백에서는 이 JWT를 받아서 처리하여 사용자 로그인 처리를 하면된다

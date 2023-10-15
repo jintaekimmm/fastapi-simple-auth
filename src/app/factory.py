@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from starlette.staticfiles import StaticFiles
 
 from core.exceptions import TokenCredentialsException, TokenExpiredException
 from core.responses import DefaultJSONResponse, ErrorJSONResponse
@@ -24,6 +25,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         openapi_url=openapi_url, swagger_ui_parameters={"defaultModelsExpandDepth": -1}
     )
+
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
     set_routes(app)
     set_middlewares(app)
@@ -46,6 +49,7 @@ def set_routes(app: FastAPI) -> None:
     app.include_router(router=auth.router)
     app.include_router(router=token.router)
     app.include_router(router=oauth.google.router, prefix="/oauth")
+    app.include_router(router=oauth.naver.router, prefix="/oauth")
 
 
 def set_middlewares(app: FastAPI) -> None:
