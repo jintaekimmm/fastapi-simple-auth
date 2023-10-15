@@ -1,2 +1,2 @@
-from .user import User, UserLoginHistory, SocialUserAccount
+from .user import User, UserLoginHistory, SocialUser
 from .token import JWTToken

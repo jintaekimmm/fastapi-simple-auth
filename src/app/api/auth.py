@@ -6,10 +6,9 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.exceptions import TokenExpiredException
 from core.responses import ErrorJSONResponse, DefaultJSONResponse
 import crud
-from dependencies.auth import AuthorizeToken, AuthorizeRefreshToken
+from dependencies.auth import AuthorizeToken
 from dependencies.database import get_session
 import models
 from schemas import (

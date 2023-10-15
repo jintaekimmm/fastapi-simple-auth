@@ -1,48 +1,42 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Request, Depends, Form, status
-from google.auth.transport import requests
-from google.oauth2.id_token import verify_oauth2_token
-from google.auth.exceptions import MalformedError
+from fastapi import APIRouter, Request, Depends, status, Query
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import crud
-from core.config import TEMPLATES, Settings, get_settings
+from core.config import Settings, get_settings, TEMPLATES
 from core.responses import ErrorJSONResponse
 from dependencies.database import get_session
+from helper.client import get_http_session
+from helper.naver_oauth import get_login_url, NaverOAuthClient
 from schemas import (
-    TokenSchema,
-    ErrorResponse,
     UserInsertSchema,
     OAuthUserInsertSchema,
     TokenInsertSchema,
     LoginHistorySchema,
+    TokenSchema,
+    ErrorResponse,
 )
 from utils.constants.oauth import ProviderID
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
 from utils.strings import masking_str
 
-router = APIRouter(prefix="/google", tags=["OAuth"])
+router = APIRouter(prefix="/naver", tags=["OAuth"])
 
 
 @router.get("/login/page")
-async def sample_login_page(
-    *, request: Request, settings: Settings = Depends(get_settings)
-):
-    """
-    Google Login 테스트 페이지
-    """
+async def sample_login_page(*, request: Request):
+    login_url = get_login_url()
 
     return TEMPLATES.TemplateResponse(
-        "google/login.html",
-        {"request": request, "client_id": settings.google_client_id},
+        "naver/login.html", {"request": request, "login_url": login_url}
     )
 
 
-@router.post(
+@router.get(
     "/login/callback",
     response_model=TokenSchema,
     responses={
@@ -52,43 +46,35 @@ async def sample_login_page(
         500: {"model": ErrorResponse},
     },
 )
-async def google_login_callback(
+async def naver_login_callback(
     *,
     request: Request,
-    credential: str = Form(...),
-    g_csrf_token: str = Form(...),
+    code: str = Query(...),
+    state: str = Query(...),
     settings: Settings = Depends(get_settings),
     session: AsyncSession = Depends(get_session),
 ):
-    """
-    Google OAuth 로그인 콜백 API
-    """
-
     aes = AESCipher()
     user_dal = crud.UserDAL(session=session)
-    oauth_user_dal = crud.SocialUserAccountDAL(session=session)
+    oauth_user_dal = crud.SocialUserDAL(session=session)
     user_login_dal = crud.UserLoginHistoryDAL(session=session)
     token_dal = crud.TokenDAL(session=session)
 
-    provider_id = ProviderID.GOOGLE.name
+    provider_id = ProviderID.NAVER.name
 
     ############################
-    # OAuth Token check
+    # OAuth Authentication
     ############################
     try:
-        user_info = verify_oauth2_token(
-            credential, requests.Request(), settings.google_client_id
-        )
-    except MalformedError as e:
-        logger.exception(e)
-        await session.rollback()
-        return ErrorJSONResponse(
-            message="잘못된 요청입니다",
-            success=False,
-            status_code=status.HTTP_400_BAD_REQUEST,
-            error_code=1400,
+        oauth_client = NaverOAuthClient(
+            code=code,
+            state=state,
+            http_session=await get_http_session(),
+            client_id=settings.naver_client_id,
+            client_secret=settings.naver_client_secret,
         )
 
+        user_info = await oauth_client.login()
     except Exception as e:
         logger.exception(e)
         await session.rollback()
@@ -105,17 +91,25 @@ async def google_login_callback(
     new_user_id = None
 
     # 연동된 계정이 존재하지 않는다면, 신규 사용자 정보를 추가한다
-    if not await oauth_user_dal.exists_user(
-        provider_id=provider_id, sub=user_info["sub"]
-    ):
+    if not await oauth_user_dal.exists_user(provider_id=provider_id, sub=user_info.id):
+        mobile, mobile_key = None, None
+        if user_info.mobile:
+            mobile = aes.encrypt(user_info.mobile)
+            mobile_key = Hasher.hmac_sha256(user_info.mobile)
+
+        email, email_key = None, None
+        if user_info.email:
+            email = aes.encrypt(user_info.email)
+            email_key = Hasher.hmac_sha256(user_info.email)
+
         # 신규 사용자 정보를 생성한다
         new_user = UserInsertSchema(
-            name=user_info["name"],
-            email=aes.encrypt(user_info["email"]),
-            email_key=Hasher.hmac_sha256(user_info["email"]),
+            name=user_info.name,
+            email=email,
+            email_key=email_key,
             uuid=uuid.uuid4().bytes,
-            mobile=None,
-            mobile_key=None,
+            mobile=mobile,
+            mobile_key=mobile_key,
             password=None,
             provider_id=provider_id,
             is_active=1,
@@ -130,10 +124,12 @@ async def google_login_callback(
             new_oauth_user = OAuthUserInsertSchema(
                 user_id=new_user_id,
                 provider_id=provider_id,
-                sub=user_info["sub"],
-                name=user_info["name"],
-                given_name=user_info["given_name"],
-                family_name=user_info["family_name"],
+                sub=user_info.id,
+                name=user_info.name,
+                nickname=user_info.nickname,
+                profile_picture=user_info.profile_image,
+                given_name=None,
+                family_name=None,
             )
             await oauth_user_dal.insert_user(new_user=new_oauth_user)
 
@@ -156,12 +152,12 @@ async def google_login_callback(
     else:
         # 이미 추가된 사용자의 경우에는 oauth openid 정보로 사용자를 조회한다
         login_user = await oauth_user_dal.get_user(
-            provider_id=provider_id, sub=user_info["sub"]
+            provider_id=provider_id, sub=user_info.id
         )
 
     if not login_user:
         logger.info(
-            f'사용자를 찾을 수 없습니다. { {"email": masking_str(user_info["email"]), "provider_id": provider_id} }'
+            f'사용자를 찾을 수 없습니다. { {"email": masking_str(user_info.email), "provider_id": provider_id} }'
         )
         return ErrorJSONResponse(
             message="사용자를 찾을 수 없습니다",
@@ -172,10 +168,10 @@ async def google_login_callback(
 
     if not login_user.is_active:
         logger.info(
-            f'사용할 수 없는 아이디 입니다. { {"email": masking_str(user_info["email"]), "provider_id": provider_id} }'
+            f'사용할 수 없는 아이디입니다. { {"email": masking_str(user_info.email), "provider_id": provider_id} }'
         )
         return ErrorJSONResponse(
-            message="사용할 수 없는 아이디 입니다",
+            message="사용할 수 없는 아이디입니다",
             success=False,
             status_code=status.HTTP_400_BAD_REQUEST,
             error_code=1400,
@@ -184,7 +180,7 @@ async def google_login_callback(
     ############################
     # Create AccessToken
     ############################
-    # JWT Token쌍을 생성한다
+    # JWT Token 쌍을 생성한다
     new_token = await create_new_jwt_token(sub=str(login_user.id))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
@@ -225,7 +221,7 @@ async def google_login_callback(
         await session.close()
 
     logger.info(
-        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(user_info["email"]), "provider_id": provider_id} }'
+        f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(user_info.email), "provider_id": provider_id} }'
     )
 
     response = TokenSchema(**new_token.model_dump())

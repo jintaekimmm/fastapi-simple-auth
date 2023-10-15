@@ -27,6 +27,8 @@ Jinja2 = "^3.1.2"
 requests = "^2.31.0"
 python-multipart = "^0.0.6"
 pydantic-settings = "^2.0.3"
+aiohttp = "^3.8.6"
+aiodns = "^3.1.0"
 
 
 [build-system]

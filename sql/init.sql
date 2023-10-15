@@ -24,13 +24,16 @@ CREATE TABLE IF NOT EXISTS user
 );
 
 -- OAuth 사용자 정보 테이블
-CREATE TABLE IF NOT EXISTS social_user_account
+CREATE TABLE IF NOT EXISTS social_user
 (
-    id          bigint auto_increment primary key,
+    id          bigint auto_increment
+        primary key,
     user_id     bigint       null comment '사용자 ID(FK)',
     provider_id varchar(64)  not null comment 'OAuth 제공 업체',
     sub         varchar(255) not null comment 'OAuth 사용자 식별 정보',
     name        varchar(128) null comment 'OAuth 사용자 이름(전체 이름)',
+    nickname    varchar(128) null comment 'OAuth 사용자 닉네임',
+    profile_picture text null comment 'OAuth 사용자 프로필 이미지',
     given_name  varchar(128) null comment 'OAuth 사용자 이름(성씨를 제외한 이름)',
     family_name varchar(128) null comment 'OAuth 사용자 이름(성씨)',
     created_at  datetime(6)  not null comment '생성일자',
@@ -40,9 +43,11 @@ CREATE TABLE IF NOT EXISTS social_user_account
         unique (provider_id, sub)
 );
 
-CREATE INDEX idx_user_id ON social_user_account (user_id);
-CREATE INDEX idx_provider_id ON social_user_account (provider_id);
-CREATE INDEX idx_sub on social_user_account (sub);
+
+CREATE INDEX idx_user_id ON social_user (user_id);
+CREATE INDEX idx_provider_id ON social_user (provider_id);
+CREATE INDEX idx_sub ON social_user (sub);
+
 
 -- 사용자 로그인 이력 테이블
 CREATE TABLE IF NOT EXISTS user_login_history
