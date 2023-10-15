@@ -9,8 +9,8 @@ import crud
 from core.config import Settings, get_settings, TEMPLATES
 from core.responses import ErrorJSONResponse
 from dependencies.database import get_session
-from helper.client import get_http_session
-from helper.naver_oauth import get_login_url, NaverOAuthClient
+from dependencies.http import get_http_session
+from utils.naver.oauth import get_login_url, NaverOAuthClient
 from schemas import (
     UserInsertSchema,
     OAuthUserInsertSchema,

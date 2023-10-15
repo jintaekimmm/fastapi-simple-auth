@@ -5,7 +5,7 @@ import aiohttp
 from loguru import logger
 
 from core.config import settings
-from helper.random import generate_random_state
+from utils.random import generate_random_state
 
 
 @dataclass
