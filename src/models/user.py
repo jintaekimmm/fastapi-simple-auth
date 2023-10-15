@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, SmallInteger, BINARY, DateTime
+from sqlalchemy import Column, BigInteger, String, SmallInteger, BINARY, DateTime, Text
 
 from db.base import Base
 from models.mixin import TimestampMixin
@@ -29,13 +29,15 @@ class UserLoginHistory(Base, TimestampMixin):
     ip_address = Column(BINARY(16))
 
 
-class SocialUserAccount(Base, TimestampMixin):
-    __tablename__ = "social_user_account"
+class SocialUser(Base, TimestampMixin):
+    __tablename__ = "social_user"
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, index=True)
     provider_id = Column(String(64), index=True)
     sub = Column(String(255), index=True)
     name = Column(String(128))
+    nickname = Column(String(128))
+    profile_picture = Column(Text)
     given_name = Column(String(128))
     family_name = Column(String(128))

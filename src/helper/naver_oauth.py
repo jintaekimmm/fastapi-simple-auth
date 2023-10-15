@@ -4,7 +4,7 @@ from urllib import parse
 import aiohttp
 from loguru import logger
 
-from core.config import Settings, settings
+from core.config import settings
 from helper.random import generate_random_state
 
 
@@ -28,14 +28,14 @@ class NaverUserProfile:
         """
 
         self.id = body.get("id", "")
-        self.email = body.get("email", "")
-        self.nickname = body.get("nickname", "")
-        self.gender = body.get("gender", "")
-        self.age = body.get("age", "")
-        self.birthday = body.get("birthday", "")
-        self.profile_image = body.get("profile_image", "")
-        self.name = body.get("name", "")
-        self.mobile = body.get("mobile", "")
+        self.email = body.get("email", None)
+        self.nickname = body.get("nickname", None)
+        self.gender = body.get("gender", None)
+        self.age = body.get("age", None)
+        self.birthday = body.get("birthday", None)
+        self.profile_image = body.get("profile_image", None)
+        self.name = body.get("name", None)
+        self.mobile = body.get("mobile", None)
 
 
 def get_login_url() -> str:

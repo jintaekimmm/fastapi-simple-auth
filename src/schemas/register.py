@@ -90,5 +90,7 @@ class OAuthUserInsertSchema(BaseModel):
     provider_id: str
     sub: str
     name: str
+    nickname: str | None = None
+    profile_picture: str | None = None
     given_name: str | None = None
     family_name: str | None = None

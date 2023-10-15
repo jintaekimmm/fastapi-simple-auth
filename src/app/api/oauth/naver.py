@@ -56,7 +56,7 @@ async def naver_login_callback(
 ):
     aes = AESCipher()
     user_dal = crud.UserDAL(session=session)
-    oauth_user_dal = crud.SocialUserAccountDAL(session=session)
+    oauth_user_dal = crud.SocialUserDAL(session=session)
     user_login_dal = crud.UserLoginHistoryDAL(session=session)
     token_dal = crud.TokenDAL(session=session)
 
@@ -126,6 +126,8 @@ async def naver_login_callback(
                 provider_id=provider_id,
                 sub=user_info.id,
                 name=user_info.name,
+                nickname=user_info.nickname,
+                profile_picture=user_info.profile_image,
                 given_name=None,
                 family_name=None,
             )
