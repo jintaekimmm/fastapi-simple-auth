@@ -14,9 +14,7 @@ class TokenDAL(DalABC):
         :return:
         """
 
-        q = select(JWTToken).where(
-            JWTToken.refresh_token_key == refresh_token_key
-        )
+        q = select(JWTToken).where(JWTToken.refresh_token_key == refresh_token_key)
 
         result = await self.session.execute(q)
         return result.scalars().first()

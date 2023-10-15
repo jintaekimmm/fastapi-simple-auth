@@ -43,9 +43,7 @@ class UserDAL(DalABC):
         """
 
         exists_criteria = (
-            select(User.email_key)
-            .where(User.email_key == email_key)
-            .exists()
+            select(User.email_key).where(User.email_key == email_key).exists()
         )
 
         q = select(User.id).where(exists_criteria)
@@ -62,9 +60,7 @@ class UserDAL(DalABC):
         """
 
         exists_criteria = (
-            select(User.mobile_key)
-            .where(User.mobile_key == mobile_key)
-            .exists()
+            select(User.mobile_key).where(User.mobile_key == mobile_key).exists()
         )
 
         q = select(User.id).where(exists_criteria)
@@ -72,9 +68,7 @@ class UserDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_user(
-        self, new_user: UserInsertSchema
-    ) -> cursor.CursorResult:
+    async def insert_user(self, new_user: UserInsertSchema) -> cursor.CursorResult:
         """
         회원가입 정보를 테이블에 저장한다
 
@@ -89,9 +83,7 @@ class UserDAL(DalABC):
 
 
 class UserLoginHistoryDAL(DalABC):
-    async def insert_login_history(
-        self, login_history: LoginHistorySchema
-    ) -> None:
+    async def insert_login_history(self, login_history: LoginHistorySchema) -> None:
         """
         로그인 접속 기록을 DB에 저장한다
         """

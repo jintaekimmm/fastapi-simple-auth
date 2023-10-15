@@ -66,7 +66,7 @@ async def google_login_callback(
 
     aes = AESCipher()
     user_dal = crud.UserDAL(session=session)
-    oauth_user_dal = crud.SocialUserAccountDAL(session=session)
+    oauth_user_dal = crud.SocialUserDAL(session=session)
     user_login_dal = crud.UserLoginHistoryDAL(session=session)
     token_dal = crud.TokenDAL(session=session)
 
@@ -132,6 +132,8 @@ async def google_login_callback(
                 provider_id=provider_id,
                 sub=user_info["sub"],
                 name=user_info["name"],
+                nickname=None,
+                profile_picture=user_info["picture"],
                 given_name=user_info["given_name"],
                 family_name=user_info["family_name"],
             )
