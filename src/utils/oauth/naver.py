@@ -5,23 +5,12 @@ import aiohttp
 from loguru import logger
 
 from core.config import settings
+from utils.oauth.profile import UserProfile
 from utils.random import generate_random_state
 
 
 @dataclass
-class NaverUserProfile:
-    """Naver 사용자의 프로필 정보를 담는 클래스"""
-
-    id: str = ""
-    email: str = ""
-    nickname: str = ""
-    gender: str = ""
-    age: str = ""
-    birthday: str = ""
-    profile_image: str = ""
-    name: str = ""
-    mobile: str = ""
-
+class NaverUserProfile(UserProfile):
     async def mapping_data(self, body: dict):
         """
         프로필 데이터를 바인딩한다
@@ -43,14 +32,17 @@ def get_login_url() -> str:
     네이버 로그인 URL을 생성하여 반환한다
     """
 
-    state = generate_random_state()
+    # state = generate_random_state()
+    state = None
 
     url = (
         f"https://nid.naver.com/oauth2.0/authorize?response_type=code"
         f"&client_id={settings.naver_client_id}"
         f"&redirect_uri={parse.quote(settings.naver_callback_url)}"
-        f"&state={state}"
     )
+
+    if state:
+        url += f"&state={state}"
 
     return url
 
@@ -59,7 +51,7 @@ def _get_access_token_request_url(
     client_id: str, client_secret: str, code: str, state: str
 ):
     """
-    네이버 accessToken을 발급받기 위한 요청 URL 주소를 생성하여 반환한다
+    네이버 accessToken을 발급받기 위해 Token 요청 URL 주소를 생성하여 반환한다
     """
 
     url = (
@@ -142,10 +134,9 @@ class NaverOAuthClient:
         profile = NaverUserProfile()
 
         headers = {"Authorization": f"{self.__token_type} {self.__access_token}"}
-
         url = _get_profile_request_url()
 
-        async with (self.__http.get(url=url, headers=headers) as response):
+        async with self.__http.get(url=url, headers=headers) as response:
             resp = await response.json()
 
             if response.status != 200:

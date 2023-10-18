@@ -1,16 +1,15 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Request, Depends, status, Query
+from fastapi import APIRouter, Request, Query, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import crud
-from core.config import Settings, get_settings, TEMPLATES
+from core.config import TEMPLATES, Settings, get_settings
 from core.responses import ErrorJSONResponse
 from dependencies.database import get_session
 from dependencies.http import get_http_session
-from utils.oauth.naver import get_login_url, NaverOAuthClient
 from schemas import (
     UserInsertSchema,
     OAuthUserInsertSchema,
@@ -20,11 +19,12 @@ from schemas import (
     ErrorResponse,
 )
 from utils.constants.oauth import ProviderID
+from utils.oauth.kakao import get_login_url, KakaoOAuthClient
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
 from utils.strings import masking_str
 
-router = APIRouter(prefix="/naver", tags=["OAuth"])
+router = APIRouter(prefix="/kakao", tags=["OAuth"])
 
 
 @router.get("/login/page")
@@ -32,7 +32,7 @@ async def sample_login_page(*, request: Request):
     login_url = get_login_url()
 
     return TEMPLATES.TemplateResponse(
-        "naver/login.html", {"request": request, "login_url": login_url}
+        "kakao/login.html", {"request": request, "login_url": login_url}
     )
 
 
@@ -46,11 +46,10 @@ async def sample_login_page(*, request: Request):
         500: {"model": ErrorResponse},
     },
 )
-async def naver_login_callback(
+async def kakao_login_callback(
     *,
     request: Request,
     code: str = Query(...),
-    state: str = Query(...),
     settings: Settings = Depends(get_settings),
     session: AsyncSession = Depends(get_session),
 ):
@@ -60,18 +59,19 @@ async def naver_login_callback(
     user_login_dal = crud.UserLoginHistoryDAL(session=session)
     token_dal = crud.TokenDAL(session=session)
 
-    provider_id = ProviderID.NAVER.name
+    provider_id = ProviderID.KAKAO.name
 
     ############################
     # OAuth Authentication
     ############################
     try:
-        oauth_client = NaverOAuthClient(
+        oauth_client = KakaoOAuthClient(
             code=code,
-            state=state,
             http_session=await get_http_session(),
-            client_id=settings.naver_client_id,
-            client_secret=settings.naver_client_secret,
+            client_id=settings.kakao_rest_api_key,
+            client_secret=settings.kakao_client_secret,
+            redirect_uri=settings.kakao_redirect_uri,
+            state="",
         )
 
         user_info = await oauth_client.login()
