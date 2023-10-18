@@ -50,6 +50,13 @@ class Settings(BaseSettings):
     naver_client_secret: str | None = None
     naver_callback_url: str | None = None
 
+    ####################
+    # OAuth: Kakao
+    ####################
+    kakao_rest_api_key: str | None = None
+    kakao_client_secret: str | None = None
+    kakao_redirect_uri: str | None = None
+
 
 class LocalSettings(Settings):
     class Config:

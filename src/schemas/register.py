@@ -63,8 +63,8 @@ class UserInsertSchema(BaseModel):
     """
 
     name: str
-    email: str
-    email_key: str
+    email: str | None
+    email_key: str | None
     uuid: bytes
     mobile: str | None
     mobile_key: str | None

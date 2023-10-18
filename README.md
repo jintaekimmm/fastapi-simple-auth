@@ -62,3 +62,6 @@ docker run -itd --name fastapi-simple-auth -p 8000:8000 fastapi-simple-auth:{VER
 
 [Naver OAuth docs](docs/NAVER_OAUTH.md)
 
+[Kakao OAuth docs](docs/KAKAO_OAUTH.md)
+
+

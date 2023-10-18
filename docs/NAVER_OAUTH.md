@@ -9,7 +9,7 @@
 
 ## .env
 
-env 파일에 Naver ClientID, Client Secret, RedirectUri를 추가한다
+env 파일에 Naver Client ID, Client Secret, Redirect Uri를 추가한다
 
 ```shell
 ... 중략

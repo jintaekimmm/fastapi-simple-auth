@@ -2,7 +2,6 @@ import os
 
 from fastapi import FastAPI, status, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from starlette.staticfiles import StaticFiles
@@ -50,6 +49,7 @@ def set_routes(app: FastAPI) -> None:
     app.include_router(router=token.router)
     app.include_router(router=oauth.google.router, prefix="/oauth")
     app.include_router(router=oauth.naver.router, prefix="/oauth")
+    app.include_router(router=oauth.kakao.router, prefix="/oauth")
 
 
 def set_middlewares(app: FastAPI) -> None:
