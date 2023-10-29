@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     kakao_client_secret: str | None = None
     kakao_redirect_uri: str | None = None
 
+    ####################
+    # OAuth: Apple
+    ####################
+    apple_team_id: str | None = None
+    apple_client_id: str | None = None
+    apple_key_id: str | None = None
+    apple_redirect_uri: str | None = None
+    apple_auth_key_file: str | None = None
+
 
 class LocalSettings(Settings):
     class Config:
