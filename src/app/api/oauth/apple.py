@@ -1,7 +1,8 @@
+import json
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Request, Query, Depends, status
+from fastapi import APIRouter, Request, Depends, Form, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,24 +13,29 @@ from core.responses import ErrorJSONResponse
 from dependencies.database import get_session
 from dependencies.http import get_http_session
 from utils.constants.oauth import ProviderID
-from utils.oauth.kakao import get_login_url, KakaoOAuthClient
+from utils.oauth.apple import AppleOAuthClient
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
 from utils.strings import masking_str, binary_to_uuid
 
-router = APIRouter(prefix="/kakao", tags=["OAuth"])
+router = APIRouter(prefix="/apple", tags=["OAuth"])
 
 
 @router.get("/login/page")
-async def sample_login_page(*, request: Request):
-    login_url = get_login_url()
-
+async def sample_login_page(
+    *, request: Request, settings: Settings = Depends(get_settings)
+):
     return TEMPLATES.TemplateResponse(
-        "kakao/login.html", {"request": request, "login_url": login_url}
+        "apple/login.html",
+        {
+            "request": request,
+            "client_id": settings.apple_client_id,
+            "redirect_uri": settings.apple_redirect_uri,
+        },
     )
 
 
-@router.get(
+@router.post(
     "/login/callback",
     response_model=schemas.JWTToken,
     responses={
@@ -39,35 +45,50 @@ async def sample_login_page(*, request: Request):
         500: {"model": schemas.ErrorResponse},
     },
 )
-async def kakao_login_callback(
+async def apple_login_callback(
     *,
     request: Request,
-    code: str = Query(...),
+    state: str = Form(...),
+    code: str = Form(...),
+    id_token: str = Form(...),
+    user: str = Form(default={}),
+    error: str = Form(default=None),
     settings: Settings = Depends(get_settings),
     session: AsyncSession = Depends(get_session),
 ):
+    """
+    Apple OAuth 로그인 콜백 API
+    """
+
     aes = AESCipher()
     user_dal = crud.UserDAL(session=session)
     oauth_user_dal = crud.SocialUserDAL(session=session)
     user_login_dal = crud.UserLoginHistoryDAL(session=session)
     token_dal = crud.TokenDAL(session=session)
 
-    provider_id = ProviderID.KAKAO.name
+    provider_id = ProviderID.APPLE.name
 
     ############################
-    # OAuth Authentication
+    # OAuth Token check
     ############################
+    name = None
+    given_name = None
+    family_name = None
+
+    # 최초 로그인 한 사용자는 이름 정보가 전달된다
     try:
-        oauth_client = KakaoOAuthClient(
-            code=code,
-            http_session=await get_http_session(),
-            client_id=settings.kakao_rest_api_key,
-            client_secret=settings.kakao_client_secret,
-            redirect_uri=settings.kakao_redirect_uri,
-            state="",
-        )
+        user = json.loads(user)
+        given_name = user.get("name", {}).get("firstName")
+        family_name = user.get("name", {}).get("lastName")
+        name = f"{family_name}{given_name}"
+    except TypeError:
+        pass
 
-        user_info = await oauth_client.login()
+    client = AppleOAuthClient(
+        code=code, settings=settings, http_session=await get_http_session()
+    )
+    try:
+        user_info = await client.login()
     except Exception as e:
         logger.exception(e)
         await session.rollback()
@@ -77,6 +98,8 @@ async def kakao_login_callback(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code=1500,
         )
+
+    user_info.name = name
 
     ############################
     # OAuth User check
@@ -121,8 +144,8 @@ async def kakao_login_callback(
                 name=user_info.name,
                 nickname=user_info.nickname,
                 profile_picture=user_info.profile_image,
-                given_name=None,
-                family_name=None,
+                given_name=given_name,
+                family_name=family_name,
             )
             await oauth_user_dal.insert_user(new_user=new_oauth_user)
 

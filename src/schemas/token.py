@@ -15,7 +15,7 @@ class UserToken(BaseModel):
     access_token: str | None
 
 
-class CreateTokenSchema(BaseModel):
+class CreateToken(BaseModel):
     """
     JWT Token 생성 함수에서 결과를 반환할 때 사용하는 스키마
     """
@@ -24,7 +24,7 @@ class CreateTokenSchema(BaseModel):
     expires_in: int
 
 
-class DefaultTokenSchema(BaseModel):
+class DefaultToken(BaseModel):
     """
     기본 Token 정보 스키마
     """
@@ -33,7 +33,7 @@ class DefaultTokenSchema(BaseModel):
     refresh_token: str
 
 
-class TokenSchema(DefaultTokenSchema):
+class JWTToken(DefaultToken):
     """
     JWT Token 스키마
     """
@@ -48,12 +48,13 @@ class TokenSchema(DefaultTokenSchema):
     iat: int
 
 
-class TokenInsertSchema(BaseModel):
+class TokenInsert(BaseModel):
     """
     Token 정보를 DB에 저장할 때 사용하는 스키마
     """
 
     user_id: int
+    user_uuid: bytes
     access_token: str
     refresh_token: str
     refresh_token_key: str
@@ -61,7 +62,7 @@ class TokenInsertSchema(BaseModel):
     expires_at: datetime
 
 
-class TokenUpdateSchema(BaseModel):
+class TokenUpdate(BaseModel):
     """
     갱신한 Token 정보를 DB에 저장할 때 사용하는 스키마
     """
@@ -73,7 +74,7 @@ class TokenUpdateSchema(BaseModel):
     expires_at: datetime
 
 
-class TokenAccessOnlySchema(BaseModel):
+class TokenAccessOnly(BaseModel):
     """
     JWT Token 스키마
     - refreshToken 정보를 제외한 스키마
@@ -87,7 +88,7 @@ class TokenAccessOnlySchema(BaseModel):
     iat: int
 
 
-class AuthTokenSchema(BaseModel):
+class AuthToken(BaseModel):
     """
     Authorization Header에 사용할 token 스키마
     """

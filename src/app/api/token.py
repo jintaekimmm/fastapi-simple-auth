@@ -5,12 +5,12 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import crud
+import schemas
 from core.exceptions import TokenExpiredException
 from core.responses import ErrorJSONResponse
-import crud
 from dependencies.auth import AuthorizeRefreshToken, AuthorizeRefreshCookie
 from dependencies.database import get_session
-from schemas import TokenSchema, ErrorResponse, TokenUpdateSchema, TokenAccessOnlySchema
 from utils.security.encryption import Hasher, AESCipher
 from utils.security.token import create_new_jwt_token
 
@@ -19,11 +19,11 @@ router = APIRouter(prefix="/token", tags=["Token"])
 
 @router.post(
     "/refresh/api",
-    response_model=TokenSchema,
+    response_model=schemas.JWTToken,
     responses={
-        401: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        401: {"model": schemas.ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def api_token_refresh(
@@ -68,10 +68,12 @@ async def api_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: TokenSchema = await create_new_jwt_token(sub=str(saved_token.user_id))
+    new_token: schemas.JWTToken = await create_new_jwt_token(
+        sub=str(saved_token.user_id)
+    )
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
-    update_token = TokenUpdateSchema(
+    update_token = schemas.TokenUpdate(
         user_id=saved_token.user_id,
         access_token=new_token.access_token,
         refresh_token=saved_token.refresh_token,
@@ -97,18 +99,18 @@ async def api_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    response = TokenSchema(**new_token.model_dump())
+    response = schemas.JWTToken(**new_token.model_dump())
 
     return response
 
 
 @router.post(
     "/refresh/web",
-    response_model=TokenSchema,
+    response_model=schemas.JWTToken,
     responses={
-        401: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        401: {"model": schemas.ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def web_token_refresh(
@@ -153,10 +155,12 @@ async def web_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: TokenSchema = await create_new_jwt_token(sub=str(saved_token.user_id))
+    new_token: schemas.JWTToken = await create_new_jwt_token(
+        sub=str(saved_token.user_id)
+    )
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
-    update_token = TokenUpdateSchema(
+    update_token = schemas.TokenUpdate(
         user_id=saved_token.user_id,
         access_token=new_token.access_token,
         refresh_token=saved_token.refresh_token,
@@ -182,7 +186,7 @@ async def web_token_refresh(
 
     logger.info(f'토큰을 갱신하였습니다. { {"user_id": saved_token.user_id} }')
 
-    token_response = TokenAccessOnlySchema(**new_token.model_dump())
+    token_response = schemas.TokenAccessOnly(**new_token.model_dump())
     # accessToken은 json으로 반환한다
     response = JSONResponse(content=token_response.model_dump())
     # refreshToken은 Cookie로 반환한다

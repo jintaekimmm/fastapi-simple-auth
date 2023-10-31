@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # encryption info
     ####################
     password_secret_key: str
-    blind_index_key: str
+    index_hash_key: str
     aes_encrypt_key: str
 
     jwt_algorithm: str = "HS256"
@@ -56,6 +56,15 @@ class Settings(BaseSettings):
     kakao_rest_api_key: str | None = None
     kakao_client_secret: str | None = None
     kakao_redirect_uri: str | None = None
+
+    ####################
+    # OAuth: Apple
+    ####################
+    apple_team_id: str | None = None
+    apple_client_id: str | None = None
+    apple_key_id: str | None = None
+    apple_redirect_uri: str | None = None
+    apple_auth_key_file: str | None = None
 
 
 class LocalSettings(Settings):

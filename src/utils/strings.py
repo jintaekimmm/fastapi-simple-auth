@@ -1,4 +1,5 @@
 import math
+import uuid
 
 
 def masking_str(s: str, percent: float = 0.3) -> str:
@@ -17,3 +18,7 @@ def masking_str(s: str, percent: float = 0.3) -> str:
     masking_len = math.ceil(str_len * percent)
 
     return f"{s[:-masking_len]}{len(s[-masking_len:]) * '*'}"
+
+
+def binary_to_uuid(s: bytes) -> str:
+    return str(uuid.UUID(bytes=s))

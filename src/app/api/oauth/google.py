@@ -9,21 +9,14 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import crud
+import schemas
 from core.config import TEMPLATES, Settings, get_settings
 from core.responses import ErrorJSONResponse
 from dependencies.database import get_session
-from schemas import (
-    TokenSchema,
-    ErrorResponse,
-    UserInsertSchema,
-    OAuthUserInsertSchema,
-    TokenInsertSchema,
-    LoginHistorySchema,
-)
 from utils.constants.oauth import ProviderID
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
-from utils.strings import masking_str
+from utils.strings import masking_str, binary_to_uuid
 
 router = APIRouter(prefix="/google", tags=["OAuth"])
 
@@ -44,12 +37,12 @@ async def sample_login_page(
 
 @router.post(
     "/login/callback",
-    response_model=TokenSchema,
+    response_model=schemas.JWTToken,
     responses={
-        400: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        400: {"model": schemas.ErrorResponse},
+        403: {"model": schemas.ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def google_login_callback(
@@ -109,7 +102,7 @@ async def google_login_callback(
         provider_id=provider_id, sub=user_info["sub"]
     ):
         # 신규 사용자 정보를 생성한다
-        new_user = UserInsertSchema(
+        new_user = schemas.RegisterInsert(
             name=user_info["name"],
             email=aes.encrypt(user_info["email"]),
             email_key=Hasher.hmac_sha256(user_info["email"]),
@@ -127,7 +120,7 @@ async def google_login_callback(
             new_user_id = result.inserted_primary_key[0]
 
             # OAuth 사용자 정보를 추가한다
-            new_oauth_user = OAuthUserInsertSchema(
+            new_oauth_user = schemas.OAuthUserInsert(
                 user_id=new_user_id,
                 provider_id=provider_id,
                 sub=user_info["sub"],
@@ -187,11 +180,12 @@ async def google_login_callback(
     # Create AccessToken
     ############################
     # JWT Token쌍을 생성한다
-    new_token = await create_new_jwt_token(sub=str(login_user.id))
+    new_token = await create_new_jwt_token(sub=binary_to_uuid(login_user.uuid))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
-    new_refresh_token = TokenInsertSchema(
+    new_refresh_token = schemas.TokenInsert(
         user_id=login_user.id,
+        user_uuid=login_user.uuid,
         access_token=new_token.access_token,
         refresh_token=aes.encrypt(new_token.refresh_token),
         refresh_token_key=Hasher.hmac_sha256(new_token.refresh_token),
@@ -205,8 +199,9 @@ async def google_login_callback(
 
         # Login 이력 저장
         await user_login_dal.insert_login_history(
-            login_history=LoginHistorySchema(
+            login_history=schemas.LoginHistory(
                 user_id=login_user.id,
+                user_uuid=login_user.uuid,
                 login_time=datetime.now(),
                 login_success=True,
                 ip_address=request.client.host,
@@ -230,6 +225,6 @@ async def google_login_callback(
         f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(user_info["email"]), "provider_id": provider_id} }'
     )
 
-    response = TokenSchema(**new_token.model_dump())
+    response = schemas.JWTToken(**new_token.model_dump())
 
     return response

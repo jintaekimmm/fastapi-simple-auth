@@ -6,3 +6,4 @@ class ProviderID(str, Enum):
     GOOGLE = "GOOGLE"
     NAVER = "NAVER"
     KAKAO = "KAKAO"
+    APPLE = "APPLE"

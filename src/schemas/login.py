@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from utils import validators
 
 
-class LoginSchema(BaseModel):
+class Login(BaseModel):
     """
     로그인 API Request Body 스키마
     """
@@ -28,12 +28,13 @@ class LoginSchema(BaseModel):
         return validators.password_validator(v)
 
 
-class LoginHistorySchema(BaseModel):
+class LoginHistory(BaseModel):
     """
     로그인 성공 정보를 담은 스키마
     """
 
     user_id: int
+    user_uuid: bytes
     login_time: datetime
     login_success: bool
     ip_address: str

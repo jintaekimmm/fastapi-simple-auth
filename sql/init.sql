@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS user_login_history
 (
     id            bigint auto_increment primary key,
     user_id       bigint        null comment '사용자 ID(PK)',
+    user_uuid     binary(16)    not null comment '사용자 UUID',
     login_time    datetime      null comment '마지막 로그인 사간',
     login_success tinyint(1) comment '로그인 성공 여부',
     ip_address    varbinary(16) null comment '마지막 로그인 IP',
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS user_login_history
 );
 
 CREATE INDEX idx_user_id ON user_login_history (user_id);
-
+create index idx_user_uuid on user_login_history (user_uuid);
 
 -- JWT Token 테이블
 CREATE TABLE IF NOT EXISTS jwt_token
@@ -82,3 +83,4 @@ CREATE INDEX idx_user_id ON jwt_token (user_id);
 CREATE INDEX idx_access_token ON jwt_token (access_token);
 CREATE INDEX idx_expires_at ON jwt_token (expires_at);
 CREATE INDEX idx_refresh_token_key ON jwt_token (refresh_token_key);
+create index idx_user_uuid on jwt_token (user_uuid);
