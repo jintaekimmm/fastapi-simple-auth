@@ -80,7 +80,9 @@ class UserDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_user(self, new_user: schemas.RegisterInsert) -> cursor.CursorResult:
+    async def insert_user(
+        self, new_user: schemas.RegisterInsert
+    ) -> cursor.CursorResult:
         """
         회원가입 정보를 테이블에 저장한다
 

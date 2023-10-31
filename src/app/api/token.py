@@ -68,7 +68,9 @@ async def api_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: schemas.JWTToken = await create_new_jwt_token(sub=str(saved_token.user_id))
+    new_token: schemas.JWTToken = await create_new_jwt_token(
+        sub=str(saved_token.user_id)
+    )
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
     update_token = schemas.TokenUpdate(
@@ -153,7 +155,9 @@ async def web_token_refresh(
         )
     # 신규 accessToken을 생성한다
     # refreshToken 값은 갱신하지 않고, 만료 날짜만 늘린다
-    new_token: schemas.JWTToken = await create_new_jwt_token(sub=str(saved_token.user_id))
+    new_token: schemas.JWTToken = await create_new_jwt_token(
+        sub=str(saved_token.user_id)
+    )
     new_token.refresh_token = aes.decrypt(saved_token.refresh_token)
 
     update_token = schemas.TokenUpdate(
