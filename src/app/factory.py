@@ -50,6 +50,7 @@ def set_routes(app: FastAPI) -> None:
     app.include_router(router=oauth.google.router, prefix="/oauth")
     app.include_router(router=oauth.naver.router, prefix="/oauth")
     app.include_router(router=oauth.kakao.router, prefix="/oauth")
+    app.include_router(router=oauth.apple.router, prefix="/oauth")
 
 
 def set_middlewares(app: FastAPI) -> None:
