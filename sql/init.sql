@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS jwt_token
 (
     id                bigint auto_increment primary key,
     user_id           bigint       not null comment '사용자 ID',
+    user_uuid         binary(16)   not null comment '사용자 UUID',
     access_token      varchar(255) not null comment 'AccessToken',
     refresh_token     text         not null comment 'RefreshToken(AES 256)',
     refresh_token_key varchar(128) not null comment 'RefreshToken(SHA 256)',
