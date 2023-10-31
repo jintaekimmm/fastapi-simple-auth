@@ -35,6 +35,19 @@ GOOGLE_CLIENT_SECRET=
 NAVER_CLIENT_ID=
 NAVER_CLIENT_SECRET=
 NAVER_CALLBACK_URL=
+
+# OAuth: Kakao
+KAKAO_REST_API_KEY=
+KAKAO_CLIENT_SECRET=
+KAKAO_REDIRECT_URI=
+
+# OAuth: Apple
+APPLE_TEAM_ID=
+APPLE_CLIENT_ID=
+APPLE_KEY_ID=
+APPLE_REDIRECT_URI=
+APPLE_AUTH_KEY_FILE=
+
 ```
 
 ### Install & Running
@@ -64,4 +77,4 @@ docker run -itd --name fastapi-simple-auth -p 8000:8000 fastapi-simple-auth:{VER
 
 [Kakao OAuth docs](docs/KAKAO_OAUTH.md)
 
-
+[Apple OAuth docs](docs/APPLE_OAUTH.md)

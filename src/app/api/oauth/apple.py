@@ -86,8 +86,8 @@ async def apple_login_callback(
     # 최초 로그인 한 사용자는 이름 정보가 전달된다
     try:
         user = json.loads(user)
-        given_name = user.get('name', {}).get('firstName')
-        family_name = user.get('name', {}).get('lastName')
+        given_name = user.get("name", {}).get("firstName")
+        family_name = user.get("name", {}).get("lastName")
         name = f"{family_name}{given_name}"
     except TypeError:
         pass
