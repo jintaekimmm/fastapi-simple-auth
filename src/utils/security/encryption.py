@@ -13,7 +13,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class Hasher:
-    __blind_index_key = settings.blind_index_key
+    __index_key = settings.index_hash_key
 
     @staticmethod
     def verify_password(plain_password, hashed_password):
@@ -26,7 +26,7 @@ class Hasher:
     @classmethod
     def hmac_sha256(cls, plain_text):
         h = hmac.new(
-            cls.__blind_index_key.encode("utf-8"),
+            cls.__index_key.encode("utf-8"),
             plain_text.encode("utf-8"),
             hashlib.sha256,
         )

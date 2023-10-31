@@ -3,8 +3,8 @@ from sqlalchemy.engine import cursor
 
 from crud.abstract import DalABC
 
+import schemas
 from models import User, UserLoginHistory, SocialUser
-from schemas import UserInsertSchema, LoginHistorySchema, OAuthUserInsertSchema
 
 
 class UserDAL(DalABC):
@@ -32,7 +32,6 @@ class UserDAL(DalABC):
 
         result = await self.session.execute(q)
         return result.scalars().first()
-
 
     async def get_by_email(self, email_key: str) -> User:
         """
@@ -81,7 +80,7 @@ class UserDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_user(self, new_user: UserInsertSchema) -> cursor.CursorResult:
+    async def insert_user(self, new_user: schemas.RegisterInsert) -> cursor.CursorResult:
         """
         회원가입 정보를 테이블에 저장한다
 
@@ -89,19 +88,19 @@ class UserDAL(DalABC):
         :return:
         """
 
-        q = insert(User).values(**new_user.dict())
+        q = insert(User).values(**new_user.model_dump())
 
         result = await self.session.execute(q)
         return result
 
 
 class UserLoginHistoryDAL(DalABC):
-    async def insert_login_history(self, login_history: LoginHistorySchema) -> None:
+    async def insert_login_history(self, login_history: schemas.LoginHistory) -> None:
         """
         로그인 접속 기록을 DB에 저장한다
         """
 
-        _login_dict = login_history.dict()
+        _login_dict = login_history.model_dump()
         _login_dict["ip_address"] = func.inet6_aton(_login_dict.get("ip_address"))
 
         q = insert(UserLoginHistory).values(**_login_dict)
@@ -145,7 +144,7 @@ class SocialUserDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def insert_user(self, new_user: OAuthUserInsertSchema):
+    async def insert_user(self, new_user: schemas.OAuthUserInsert):
         """
         OAuth 연동 계정 정보를 저장한다
         """

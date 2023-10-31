@@ -5,7 +5,7 @@ from schemas.responses import DefaultResponse
 from utils import validators
 
 
-class RegisterRequestSchema(BaseModel):
+class RegisterRequest(BaseModel):
     """
     회원가입 API Request Body 스키마
     """
@@ -57,7 +57,7 @@ class RegisterRequestSchema(BaseModel):
         return v
 
 
-class UserInsertSchema(BaseModel):
+class RegisterInsert(BaseModel):
     """
     회원가입 정보를 DB에 저장할 때 사용하는 스키마
     """
@@ -73,7 +73,7 @@ class UserInsertSchema(BaseModel):
     is_active: int = 0
 
 
-class RegisterResponseSchema(DefaultResponse):
+class RegisterResponse(DefaultResponse):
     """
     회원가입 결과를 반환할 때 사용하는 스키마
     """
@@ -81,7 +81,7 @@ class RegisterResponseSchema(DefaultResponse):
     id: int
 
 
-class OAuthUserInsertSchema(BaseModel):
+class OAuthUserInsert(BaseModel):
     """
     OAuth 외부 유저 정보를 DB에 저장할 때 사용하는 스키마
     """

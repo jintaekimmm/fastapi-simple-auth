@@ -10,20 +10,8 @@ from core.responses import ErrorJSONResponse, DefaultJSONResponse
 import crud
 from dependencies.auth import AuthorizeToken
 from dependencies.database import get_session
-import models
-from schemas import (
-    ErrorResponse,
-    DefaultResponse,
-    RegisterRequestSchema,
-    RegisterResponseSchema,
-    UserInsertSchema,
-    TokenSchema,
-    AuthTokenSchema,
-    TokenAccessOnlySchema,
-    TokenInsertSchema,
-    LoginSchema,
-    LoginHistorySchema,
-)
+
+import schemas
 from utils.constants.oauth import ProviderID
 from utils.security.auth import authenticate
 from utils.security.encryption import AESCipher, Hasher
@@ -35,15 +23,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post(
     "/register",
-    response_model=RegisterResponseSchema,
+    response_model=schemas.RegisterResponse,
     responses={
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def register_user(
     *,
-    register_request: RegisterRequestSchema,
+    register_request: schemas.RegisterRequest,
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -81,7 +69,7 @@ async def register_user(
         else:
             mobile = aes.encrypt(register_request.mobile)
 
-    new_user = UserInsertSchema(
+    new_user = schemas.RegisterInsert(
         name=register_request.name,
         email=aes.encrypt(register_request.email),
         email_key=email_key,
@@ -112,7 +100,7 @@ async def register_user(
     finally:
         await session.close()
 
-    response = RegisterResponseSchema(
+    response = schemas.RegisterResponse(
         id=new_user_id, success=True, message="회원가입을 환영합니다"
     )
 
@@ -124,17 +112,17 @@ async def register_user(
 ###########################################################################
 @router.post(
     "/api/login",
-    response_model=TokenSchema,
+    response_model=schemas.JWTToken,
     responses={
-        400: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        400: {"model": schemas.ErrorResponse},
+        403: {"model": schemas.ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def api_login(
     *,
-    login_request: LoginSchema,
+    login_request: schemas.Login,
     request: Request,
     session: AsyncSession = Depends(get_session),
 ):
@@ -151,7 +139,7 @@ async def api_login(
     token_dal = crud.TokenDAL(session=session)
 
     try:
-        login_user: models.User = await user_dal.get_by_email(
+        login_user = await user_dal.get_by_email(
             email_key=Hasher.hmac_sha256(login_request.email)
         )
 
@@ -202,7 +190,7 @@ async def api_login(
     new_token = await create_new_jwt_token(sub=binary_to_uuid(login_user.uuid))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
-    new_refresh_token = TokenInsertSchema(
+    new_refresh_token = schemas.TokenInsert(
         user_id=login_user.id,
         user_uuid=login_user.uuid,
         access_token=new_token.access_token,
@@ -218,7 +206,7 @@ async def api_login(
 
         # Login 이력 저장
         await user_login_dal.insert_login_history(
-            login_history=LoginHistorySchema(
+            login_history=schemas.LoginHistory(
                 user_id=login_user.id,
                 user_uuid=login_user.uuid,
                 login_time=datetime.now(),
@@ -244,23 +232,23 @@ async def api_login(
         f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name), "provider_id": "LOCAL"} }'
     )
 
-    response = TokenSchema(**new_token.model_dump())
+    response = schemas.JWTToken(**new_token.model_dump())
 
     return response
 
 
 @router.post(
     "/api/logout",
-    response_model=DefaultResponse,
+    response_model=schemas.DefaultResponse,
     responses={
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        401: {"model": schemas.ErrorResponse},
+        403: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def api_logout(
     *,
-    user_token: AuthTokenSchema = Depends(AuthorizeToken()),
+    user_token: schemas.AuthToken = Depends(AuthorizeToken()),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -308,17 +296,17 @@ async def api_logout(
 ###########################################################################
 @router.post(
     "/web/login",
-    response_model=TokenAccessOnlySchema,
+    response_model=schemas.TokenAccessOnly,
     responses={
-        400: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        404: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        400: {"model": schemas.ErrorResponse},
+        403: {"model": schemas.ErrorResponse},
+        404: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def web_login(
     *,
-    login_request: LoginSchema,
+    login_request: schemas.Login,
     request: Request,
     session: AsyncSession = Depends(get_session),
 ):
@@ -336,7 +324,7 @@ async def web_login(
     token_dal = crud.TokenDAL(session=session)
 
     try:
-        login_user: models.User = await user_dal.get_by_email(
+        login_user = await user_dal.get_by_email(
             email_key=Hasher.hmac_sha256(login_request.email)
         )
 
@@ -387,7 +375,7 @@ async def web_login(
     new_token = await create_new_jwt_token(sub=binary_to_uuid(login_user.uuid))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
-    new_refresh_token = TokenInsertSchema(
+    new_refresh_token = schemas.TokenInsert(
         user_id=login_user.id,
         user_uuid=login_user.uuid,
         access_token=new_token.access_token,
@@ -403,7 +391,7 @@ async def web_login(
 
         # Login 이력 저장
         await user_login_dal.insert_login_history(
-            login_history=LoginHistorySchema(
+            login_history=schemas.LoginHistory(
                 user_id=login_user.id,
                 user_uuid=login_user.uuid,
                 login_time=datetime.now(),
@@ -429,7 +417,7 @@ async def web_login(
         f'사용자가 로그인하였습니다. { {"user_id": login_user.id, "email": masking_str(login_request.email), "name": masking_str(login_user.name)}, "provider_id": "LOCAL" }'
     )
 
-    token_response = TokenAccessOnlySchema(**new_token.model_dump())
+    token_response = schemas.TokenAccessOnly(**new_token.model_dump())
     # accessToken은 json으로 반환한다
     response = JSONResponse(content=token_response.model_dump())
     # refreshToken은 Cookie로 반환한다
@@ -446,16 +434,16 @@ async def web_login(
 
 @router.post(
     "/web/logout",
-    response_model=DefaultResponse,
+    response_model=schemas.DefaultResponse,
     responses={
-        401: {"model": ErrorResponse},
-        403: {"model": ErrorResponse},
-        500: {"model": ErrorResponse},
+        401: {"model": schemas.ErrorResponse},
+        403: {"model": schemas.ErrorResponse},
+        500: {"model": schemas.ErrorResponse},
     },
 )
 async def web_logout(
     *,
-    user_token: AuthTokenSchema = Depends(AuthorizeToken()),
+    user_token: schemas.AuthToken = Depends(AuthorizeToken()),
     session: AsyncSession = Depends(get_session),
 ):
     """

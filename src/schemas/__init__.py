@@ -1,17 +1,17 @@
-from .login import LoginSchema, LoginHistorySchema
+from .login import Login, LoginHistory
 from .token import (
     UserToken,
-    CreateTokenSchema,
-    TokenSchema,
-    TokenInsertSchema,
-    TokenUpdateSchema,
-    TokenAccessOnlySchema,
-    AuthTokenSchema,
+    CreateToken,
+    JWTToken,
+    TokenInsert,
+    TokenUpdate,
+    TokenAccessOnly,
+    AuthToken,
 )
 from .register import (
-    RegisterRequestSchema,
-    RegisterResponseSchema,
-    UserInsertSchema,
-    OAuthUserInsertSchema,
+    RegisterRequest,
+    RegisterResponse,
+    RegisterInsert,
+    OAuthUserInsert,
 )
 from .responses import DefaultResponse, ErrorResponse

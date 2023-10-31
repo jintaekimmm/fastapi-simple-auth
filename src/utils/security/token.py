@@ -7,17 +7,17 @@ from core.config import settings
 from schemas import token
 
 
-async def create_new_jwt_token(*, sub: str) -> token.TokenSchema:
+async def create_new_jwt_token(*, sub: str) -> token.JWTToken:
     """
     사용자에게 반환할 JWT 토큰을 생성한다
     """
     # token 발급 시간
     iat = int(datetime.now().timestamp())
 
-    access_token: token.CreateTokenSchema = await create_access_token(sub=sub, iat=iat)
-    refresh_token: token.CreateTokenSchema = await create_refresh_token()
+    access_token: token.CreateToken = await create_access_token(sub=sub, iat=iat)
+    refresh_token: token.CreateToken = await create_refresh_token()
 
-    return token.TokenSchema(
+    return token.JWTToken(
         token_type="Bearer",
         access_token=access_token.token,
         expires_in=access_token.expires_in,
@@ -29,7 +29,7 @@ async def create_new_jwt_token(*, sub: str) -> token.TokenSchema:
     )
 
 
-async def create_access_token(*, sub: str, iat: int = None) -> token.CreateTokenSchema:
+async def create_access_token(*, sub: str, iat: int = None) -> token.CreateToken:
     """
     AccessToken을 생성한다
     """
@@ -43,7 +43,7 @@ async def create_access_token(*, sub: str, iat: int = None) -> token.CreateToken
 
 def _create_token(
     token_type: str, expires_in: timedelta, sub: str, iat: int
-) -> token.CreateTokenSchema:
+) -> token.CreateToken:
     """
     Token을 생성한다
     """
@@ -62,10 +62,10 @@ def _create_token(
         payload, key=settings.jwt_access_secret_key, algorithm=settings.jwt_algorithm
     )
 
-    return token.CreateTokenSchema(token=jwt_token, expires_in=exp)
+    return token.CreateToken(token=jwt_token, expires_in=exp)
 
 
-async def create_refresh_token() -> token.CreateTokenSchema:
+async def create_refresh_token() -> token.CreateToken:
     """
     RefreshToken을 생성한다
     """
@@ -74,4 +74,4 @@ async def create_refresh_token() -> token.CreateTokenSchema:
     t = timedelta(minutes=settings.jwt_refresh_token_expire_minutes)
     exp = int((datetime.now() + t).timestamp())
 
-    return token.CreateTokenSchema(token=random_token, expires_in=exp)
+    return token.CreateToken(token=random_token, expires_in=exp)

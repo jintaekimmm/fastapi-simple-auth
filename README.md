@@ -12,7 +12,7 @@ FastAPI로 구현한 인증 API로 로그인, 로그아웃, 토큰 갱신 등을
 # ENCRYPTION
 PASSWORD_SECRET_KEY=secret
 AES_ENCRYPT_KEY=secret
-BLIND_INDEX_KEY=secret
+INDEX_HASH_KEY=secret
 
 # JWT
 JWT_ACCESS_SECRET_KEY=secret

@@ -1,12 +1,13 @@
 from sqlalchemy import select, insert, delete, update, func
 
+import models
+import schemas
 from crud.abstract import DalABC
 from models import JWTToken
-from schemas import TokenInsertSchema
 
 
 class TokenDAL(DalABC):
-    async def get(self, refresh_token_key: str) -> JWTToken:
+    async def get(self, refresh_token_key: str) -> models.JWTToken:
         """
         refreshToken으로 저장된 토큰 정보를 조회한다
 
@@ -19,7 +20,7 @@ class TokenDAL(DalABC):
         result = await self.session.execute(q)
         return result.scalars().first()
 
-    async def insert_token(self, new_token: TokenInsertSchema) -> None:
+    async def insert_token(self, new_token: schemas.TokenInsert) -> None:
         """
         생성된 Token 정보를 DB에 저장한다
 

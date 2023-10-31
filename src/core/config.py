@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # encryption info
     ####################
     password_secret_key: str
-    blind_index_key: str
+    index_hash_key: str
     aes_encrypt_key: str
 
     jwt_algorithm: str = "HS256"
