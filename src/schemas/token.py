@@ -54,6 +54,7 @@ class TokenInsertSchema(BaseModel):
     """
 
     user_id: int
+    user_uuid: bytes
     access_token: str
     refresh_token: str
     refresh_token_key: str

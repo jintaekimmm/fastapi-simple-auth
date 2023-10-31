@@ -186,6 +186,7 @@ async def kakao_login_callback(
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
     new_refresh_token = TokenInsertSchema(
         user_id=login_user.id,
+        user_uuid=login_user.uuid,
         access_token=new_token.access_token,
         refresh_token=aes.encrypt(new_token.refresh_token),
         refresh_token_key=Hasher.hmac_sha256(new_token.refresh_token),
@@ -201,6 +202,7 @@ async def kakao_login_callback(
         await user_login_dal.insert_login_history(
             login_history=LoginHistorySchema(
                 user_id=login_user.id,
+                user_uuid=login_user.uuid,
                 login_time=datetime.now(),
                 login_success=True,
                 ip_address=request.client.host,

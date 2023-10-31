@@ -26,7 +26,7 @@ class TokenDAL(DalABC):
         :param new_token: 새로 생성된 JWT Token 정보를 담고 있는 스키마
         :return:
         """
-        q = insert(JWTToken).values(**new_token.dict())
+        q = insert(JWTToken).values(**new_token.model_dump())
 
         await self.session.execute(q)
 

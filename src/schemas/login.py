@@ -34,6 +34,7 @@ class LoginHistorySchema(BaseModel):
     """
 
     user_id: int
+    user_uuid: bytes
     login_time: datetime
     login_success: bool
     ip_address: str

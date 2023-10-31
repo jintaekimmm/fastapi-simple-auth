@@ -24,6 +24,7 @@ class UserLoginHistory(Base, TimestampMixin):
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, index=True)
+    user_uuid = Column(BINARY(16), index=True)
     login_time = Column(DateTime, default=None)
     login_success = Column(SmallInteger, default=0)
     ip_address = Column(BINARY(16))
