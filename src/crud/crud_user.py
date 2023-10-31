@@ -21,6 +21,19 @@ class UserDAL(DalABC):
         result = await self.session.execute(q)
         return result.scalars().first()
 
+    async def get_by_user_uuid(self, uuid: str) -> User:
+        """
+        사용자 UUID로 사용자를 조회한다
+
+        :param uuid: 문자열 타입의 UUID
+        :return:
+        """
+        q = select(User).where(User.uuid == func.UUID_TO_BIN(uuid))
+
+        result = await self.session.execute(q)
+        return result.scalars().first()
+
+
     async def get_by_email(self, email_key: str) -> User:
         """
         이메일 주소로 사용자를 검색하여 결과를 반환한다

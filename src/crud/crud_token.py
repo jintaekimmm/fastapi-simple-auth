@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert, delete, update
+from sqlalchemy import select, insert, delete, update, func
 
 from crud.abstract import DalABC
 from models import JWTToken
@@ -30,18 +30,18 @@ class TokenDAL(DalABC):
 
         await self.session.execute(q)
 
-    async def exists(self, user_id: int, access_token: str) -> bool:
+    async def exists(self, user_uuid: str, access_token: str) -> bool:
         """
         사용자 AccessToken이 존재하는지 확인하고 결과를 반환한다
 
-        :param user_id: 사용자 Id 번호로 JWT Token에 저장된 sub claim를 전달 받는다
+        :param user_uuid: 사용자 UUID로 JWT Token에 저장된 sub claim를 전달 받는다
         :param access_token: JWT Token의 accessToken이다
         :return: 토큰 정보가 존재한다면 'True'를 반환하고, 그렇지 않다면 'False'를 반환한다
         """
 
         exists_criteria = (
             select(JWTToken)
-            .where(JWTToken.user_id == user_id)
+            .where(JWTToken.user_uuid == func.UUID_TO_BIN(user_uuid))
             .where(JWTToken.access_token == access_token)
             .exists()
         )
@@ -51,18 +51,18 @@ class TokenDAL(DalABC):
         result = await self.session.execute(q)
         return bool(result.all())
 
-    async def delete(self, user_id: int, access_token: str) -> None:
+    async def delete(self, user_uuid: str, access_token: str) -> None:
         """
         저장된 사용자 accessToken 정보를 삭제한다
 
-        :param user_id: 사용자 Id 번호로 JWT Token에 저장된 sub claim를 전달 받는다
+        :param user_uuid: 사용자 UUID로 JWT Token에 저장된 sub claim를 전달 받는다
         :param access_token: JWT Token의 accessToken이다
         :return:
         """
 
         q = (
             delete(JWTToken)
-            .where(JWTToken.user_id == user_id)
+            .where(JWTToken.user_uuid == func.UUID_TO_BIN(user_uuid))
             .where(JWTToken.access_token == access_token)
             .execution_options(synchronize_session="fetch")
         )

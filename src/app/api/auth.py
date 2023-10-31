@@ -28,7 +28,7 @@ from utils.constants.oauth import ProviderID
 from utils.security.auth import authenticate
 from utils.security.encryption import AESCipher, Hasher
 from utils.security.token import create_new_jwt_token
-from utils.strings import masking_str
+from utils.strings import masking_str, binary_to_uuid
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -199,7 +199,7 @@ async def api_login(
         )
 
     # JWT Token쌍을 생성한다
-    new_token: TokenSchema = await create_new_jwt_token(sub=str(login_user.id))
+    new_token = await create_new_jwt_token(sub=binary_to_uuid(login_user.uuid))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
     new_refresh_token = TokenInsertSchema(
@@ -276,10 +276,10 @@ async def api_logout(
 
     try:
         if await token_dal.exists(
-            user_id=int(user_token.sub), access_token=user_token.access_token
+            user_uuid=str(user_token.sub), access_token=user_token.access_token
         ):
             await token_dal.delete(
-                user_id=int(user_token.sub), access_token=user_token.access_token
+                user_uuid=str(user_token.sub), access_token=user_token.access_token
             )
 
             await session.commit()
@@ -384,7 +384,7 @@ async def web_login(
         )
 
     # JWT Token쌍을 생성한다
-    new_token: TokenSchema = await create_new_jwt_token(sub=str(login_user.id))
+    new_token = await create_new_jwt_token(sub=binary_to_uuid(login_user.uuid))
 
     # 생성한 RefreshToken을 DB에 저장하기 위한 스키마 생성
     new_refresh_token = TokenInsertSchema(
@@ -472,10 +472,10 @@ async def web_logout(
 
     try:
         if await token_dal.exists(
-            user_id=int(user_token.sub), access_token=user_token.access_token
+            user_uuid=str(user_token.sub), access_token=user_token.access_token
         ):
             await token_dal.delete(
-                user_id=int(user_token.sub), access_token=user_token.access_token
+                user_uuid=str(user_token.sub), access_token=user_token.access_token
             )
 
             await session.commit()
