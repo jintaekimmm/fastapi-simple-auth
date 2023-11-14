@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import os
 
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -16,12 +17,19 @@ class Hasher:
     __index_key = settings.index_hash_key
 
     @staticmethod
-    def verify_password(plain_password, hashed_password):
-        return pwd_context.verify(plain_password, hashed_password)
+    def verify_password(plain_password: str, hashed_password: str, salt: bytes):
+        return hashed_password == Hasher.get_password_hash(plain_password, salt)
 
     @staticmethod
-    def get_password_hash(password):
-        return pwd_context.hash(password)
+    def get_password_hash(password: str, salt: bytes) -> str:
+        hashed_password = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, 10000
+        ).hex()
+        return hashed_password
+
+    @staticmethod
+    def get_password_salt() -> bytes:
+        return os.urandom(32)
 
     @classmethod
     def hmac_sha256(cls, plain_text):

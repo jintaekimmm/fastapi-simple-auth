@@ -69,6 +69,7 @@ class RegisterInsert(BaseModel):
     mobile: str | None
     mobile_key: str | None
     password: str | None
+    salt: bytes | None
     provider_id: str
     is_active: int = 0
 

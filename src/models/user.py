@@ -14,7 +14,8 @@ class User(Base, TimestampMixin):
     name = Column(String(64), default=None)
     mobile = Column(String(255), nullable=True, index=True, unique=True)
     mobile_key = Column(String(255), nullable=True, index=True)
-    password = Column(String(128), nullable=True)
+    password = Column(String(255), nullable=True)
+    salt = Column(BINARY(32))
     is_active = Column(SmallInteger, default=0)
     provider_id = Column(String(64), index=True)
 
