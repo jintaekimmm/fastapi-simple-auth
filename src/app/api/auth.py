@@ -69,6 +69,8 @@ async def register_user(
         else:
             mobile = aes.encrypt(register_request.mobile)
 
+    salt = Hasher.get_password_salt()
+
     new_user = schemas.RegisterInsert(
         name=register_request.name,
         email=aes.encrypt(register_request.email),
@@ -76,7 +78,8 @@ async def register_user(
         uuid=uuid.uuid4().bytes,
         mobile=mobile,
         mobile_key=mobile_key,
-        password=Hasher.get_password_hash(register_request.password1),
+        password=Hasher.get_password_hash(register_request.password1, salt),
+        salt=salt,
         provider_id=ProviderID.LOCAL.name,
         is_active=1,
     )
@@ -176,7 +179,9 @@ async def api_login(
         )
 
     if not await authenticate(
-        plain_password=login_request.password, user_password=login_user.password
+        plain_password=login_request.password,
+        user_password=login_user.password,
+        salt=login_user.salt,
     ):
         logger.info(f'사용자 인증에 실패하였습니다. { {"email": masking_str(login_request.email)} }')
         return ErrorJSONResponse(
@@ -361,7 +366,9 @@ async def web_login(
         )
 
     if not await authenticate(
-        plain_password=login_request.password, user_password=login_user.password
+        plain_password=login_request.password,
+        user_password=login_user.password,
+        salt=login_user.salt,
     ):
         logger.info(f'사용자 인증에 실패하였습니다. { {"email": masking_str(login_request.email)} }')
         return ErrorJSONResponse(
