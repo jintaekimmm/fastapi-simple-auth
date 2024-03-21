@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS user
     mobile_key  varchar(255)         null comment '핸드폰 번호 블라인드 인덱스(SHA 256)',
     name        varchar(64)          not null comment '이름',
     password    varchar(255)         null comment '비밀번호',
+    salt        binary(32)           null comment '비밀번호 Salt',
     provider_id varchar(64)          null comment 'OAuth 제공 업체',
     is_active   tinyint(1) default 0 not null comment '계정 활성화 여부',
     created_at  datetime(6)          not null comment '생성일자',
